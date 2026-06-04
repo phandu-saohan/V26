@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Shield, 
   Key, 
@@ -141,10 +141,62 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
     setBusinessConfig(store.getBusinessConfig());
   };
 
+  /**
+   * Apply PWA icon & theme-color from businessConfig to the current document DOM.
+   * Works for both base64 data URLs and regular https:// URLs.
+   */
+  const applyPwaIconToDocument = (logoUrl?: string, themeColor?: string) => {
+    const url = logoUrl || businessConfig.pwaLogoUrl;
+    const color = themeColor || businessConfig.pwaThemeColor || '#4f46e5';
+
+    if (url) {
+      // Update favicon (tab icon)
+      let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+      if (!favicon) {
+        favicon = document.createElement('link');
+        favicon.rel = 'icon';
+        document.head.appendChild(favicon);
+      }
+      favicon.href = url;
+      favicon.type = url.startsWith('data:image/png') ? 'image/png'
+        : url.startsWith('data:image/svg') ? 'image/svg+xml'
+        : url.startsWith('data:image/jpeg') || url.startsWith('data:image/jpg') ? 'image/jpeg'
+        : 'image/png';
+
+      // Update apple-touch-icon
+      let appleIcon = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
+      if (!appleIcon) {
+        appleIcon = document.createElement('link');
+        appleIcon.rel = 'apple-touch-icon';
+        document.head.appendChild(appleIcon);
+      }
+      appleIcon.href = url;
+    }
+
+    // Update theme-color meta
+    let themeMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    if (!themeMeta) {
+      themeMeta = document.createElement('meta');
+      themeMeta.name = 'theme-color';
+      document.head.appendChild(themeMeta);
+    }
+    themeMeta.content = color;
+  };
+
+  // Apply PWA icon on component mount (reflects previously saved logo)
+  useEffect(() => {
+    const cfg = store.getBusinessConfig();
+    if (cfg.pwaLogoUrl || cfg.pwaThemeColor) {
+      applyPwaIconToDocument(cfg.pwaLogoUrl, cfg.pwaThemeColor);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // --- Handlers for Business Config ---
   const handleSaveBusinessSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     store.saveBusinessConfig(businessConfig);
+    // Apply PWA icon & theme-color to DOM immediately after save
+    applyPwaIconToDocument(businessConfig.pwaLogoUrl, businessConfig.pwaThemeColor);
     alert('Đã cập nhật cấu hình Nghiệp vụ sự kiện lưu vào database thành công!');
     reloadData();
   };

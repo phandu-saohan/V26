@@ -93,6 +93,45 @@ function AppContent() {
     };
   }, []);
 
+  // Apply PWA logo & theme-color from config to DOM on startup
+  useEffect(() => {
+    const applyPwaAssets = () => {
+      const cfg = store.getBusinessConfig();
+      const logoUrl = cfg.pwaLogoUrl;
+      const themeColor = cfg.pwaThemeColor || '#4f46e5';
+
+      if (logoUrl) {
+        // Update favicon
+        let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+        if (!favicon) {
+          favicon = document.createElement('link');
+          favicon.rel = 'icon';
+          document.head.appendChild(favicon);
+        }
+        favicon.href = logoUrl;
+
+        // Update apple-touch-icon
+        let appleIcon = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
+        if (!appleIcon) {
+          appleIcon = document.createElement('link');
+          appleIcon.rel = 'apple-touch-icon';
+          document.head.appendChild(appleIcon);
+        }
+        appleIcon.href = logoUrl;
+      }
+
+      // Always update theme-color
+      const themeMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+      if (themeMeta) themeMeta.content = themeColor;
+    };
+
+    // Run immediately then again once store finishes loading from Supabase
+    applyPwaAssets();
+    const onStoreLoaded = () => applyPwaAssets();
+    window.addEventListener('store-loaded', onStoreLoaded);
+    return () => window.removeEventListener('store-loaded', onStoreLoaded);
+  }, []);
+
   // Real-time Push Notifications Listening (Supabase Realtime / Local Fallback)
   useEffect(() => {
     const unsubscribe = subscribeToNotifications(
