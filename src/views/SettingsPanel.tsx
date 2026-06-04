@@ -33,7 +33,8 @@ import {
   Users,
   MapPin,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  Printer
 } from 'lucide-react';
 import { store } from '../dataStore';
 import { 
@@ -56,7 +57,21 @@ interface SettingsPanelProps {
 
 export default function SettingsPanel({ role, onChangeRole }: SettingsPanelProps) {
   // Navigation tab state
-  const [activeSubTab, setActiveSubTab] = useState<'business' | 'packages' | 'integrations' | 'operators' | 'embeds'>('business');
+  const [activeSubTab, setActiveSubTab] = useState<'business' | 'packages' | 'integrations' | 'operators' | 'embeds' | 'printers'>('business');
+
+  // Printer config states (saved to localStorage for device-specific setup)
+  const [printerAutoPrint, setPrinterAutoPrint] = useState(() => {
+    return localStorage.getItem('vsaps_printer_autoprint') === 'true';
+  });
+  const [printerPaperSize, setPrinterPaperSize] = useState(() => {
+    return localStorage.getItem('vsaps_printer_papersize') || '100x150';
+  });
+  const [printerMargin, setPrinterMargin] = useState(() => {
+    return localStorage.getItem('vsaps_printer_margin') || 'none';
+  });
+  const [printerConnection, setPrinterConnection] = useState(() => {
+    return localStorage.getItem('vsaps_printer_connection') || 'browser';
+  });
 
   // Business Config state
   const [businessConfig, setBusinessConfig] = useState<BusinessConfig>(store.getBusinessConfig());
@@ -215,6 +230,16 @@ export default function SettingsPanel({ role, onChangeRole }: SettingsPanelProps
 
     store.deletePackage(id);
     reloadData();
+  };
+
+  // --- Handlers for Printer Settings ---
+  const handleSavePrinterSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem('vsaps_printer_autoprint', String(printerAutoPrint));
+    localStorage.setItem('vsaps_printer_papersize', printerPaperSize);
+    localStorage.setItem('vsaps_printer_margin', printerMargin);
+    localStorage.setItem('vsaps_printer_connection', printerConnection);
+    alert('Đã lưu cấu hình máy in thành công!');
   };
 
   // --- Handlers for Integration (Zalo OA, SMTP, Supabase) ---
@@ -689,6 +714,18 @@ export default function SettingsPanel({ role, onChangeRole }: SettingsPanelProps
             <span>💻 Quản lý Mã Nhúng (WP)</span>
           </button>
 
+          <button
+            onClick={() => setActiveSubTab('printers')}
+            className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2.5 cursor-pointer border-none ${
+              activeSubTab === 'printers'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-150 hover:text-slate-900 bg-transparent'
+            }`}
+          >
+            <Printer className="w-4 h-4 shrink-0" />
+            <span>🖨️ Cấu hình Máy In Nhãn</span>
+          </button>
+
           {/* Quick diagnostic tips */}
           <div className="pt-4 mt-4 border-t border-slate-200 px-2 space-y-2 text-[10.5px] text-slate-500 leading-normal">
             <span className="font-extrabold text-slate-800 block text-[10px]">🖥️ DATABASE SYNC:</span>
@@ -772,6 +809,128 @@ export default function SettingsPanel({ role, onChangeRole }: SettingsPanelProps
                       onChange={(e) => setBusinessConfig({ ...businessConfig, maxRegistrations: Number(e.target.value) })}
                       className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none font-mono font-bold text-slate-850"
                     />
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-100 pt-4 mt-4 space-y-4">
+                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest block flex items-center gap-1.5">
+                    <Smartphone className="w-4 h-4 text-indigo-650 animate-pulse" />
+                    Cấu hình ứng dụng di động PWA (Tải App / Chế độ ngoại tuyến)
+                  </span>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-500 block">Tên ứng dụng hiển thị (App Name) *</label>
+                      <input
+                        type="text"
+                        value={businessConfig.pwaName || ''}
+                        onChange={(e) => setBusinessConfig({ ...businessConfig, pwaName: e.target.value })}
+                        placeholder="Ví dụ: VSAPS 2026 - Hội Nghị Thẩm Mỹ"
+                        className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none font-bold text-slate-800"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-500 block">Tên viết tắt trên màn hình điện thoại (Short Name) *</label>
+                      <input
+                        type="text"
+                        value={businessConfig.pwaShortName || ''}
+                        onChange={(e) => setBusinessConfig({ ...businessConfig, pwaShortName: e.target.value })}
+                        placeholder="Ví dụ: VSAPS 2026"
+                        className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none font-bold text-slate-800"
+                      />
+                    </div>
+
+                    <div className="space-y-1 md:col-span-2">
+                      <label className="text-[11px] font-bold text-slate-500 block">Mô tả ứng dụng PWA</label>
+                      <textarea
+                        value={businessConfig.pwaDescription || ''}
+                        onChange={(e) => setBusinessConfig({ ...businessConfig, pwaDescription: e.target.value })}
+                        placeholder="Nhập mô tả ngắn về ứng dụng phục vụ SEO và giới thiệu PWA..."
+                        rows={2}
+                        className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none font-medium text-slate-800"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-500 block">Logo ứng dụng PWA *</label>
+                      <div className="flex items-center gap-3 bg-slate-50 p-2 border border-slate-200 rounded-xl">
+                        <div className="w-12 h-12 rounded-lg border border-slate-200 bg-white flex items-center justify-center overflow-hidden shrink-0">
+                          {businessConfig.pwaLogoUrl ? (
+                            <img src={businessConfig.pwaLogoUrl} alt="Logo PWA" className="w-full h-full object-contain" />
+                          ) : (
+                            <span className="text-[10px] text-slate-400 font-bold select-none text-center">No Logo</span>
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          <label className="px-3 py-1 bg-white hover:bg-slate-100 border border-slate-350 text-[10px] font-bold rounded-lg cursor-pointer transition-all inline-block select-none">
+                            Tải lên hình ảnh
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    setBusinessConfig({ ...businessConfig, pwaLogoUrl: reader.result as string });
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                          </label>
+                          {businessConfig.pwaLogoUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setBusinessConfig({ ...businessConfig, pwaLogoUrl: '' })}
+                              className="px-2 py-1 ml-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-[10px] font-bold rounded-lg border-none cursor-pointer"
+                            >
+                              Xóa
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-500 block">Màu chủ đạo (Theme) *</label>
+                        <div className="flex gap-2 items-center">
+                          <input
+                            type="color"
+                            value={businessConfig.pwaThemeColor || '#4f46e5'}
+                            onChange={(e) => setBusinessConfig({ ...businessConfig, pwaThemeColor: e.target.value })}
+                            className="w-8 h-8 rounded-lg border border-slate-200 cursor-pointer p-0"
+                          />
+                          <input
+                            type="text"
+                            value={businessConfig.pwaThemeColor || '#4f46e5'}
+                            onChange={(e) => setBusinessConfig({ ...businessConfig, pwaThemeColor: e.target.value })}
+                            className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg outline-none font-mono text-slate-800"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-500 block">Màu nền (Background) *</label>
+                        <div className="flex gap-2 items-center">
+                          <input
+                            type="color"
+                            value={businessConfig.pwaBackgroundColor || '#0f172a'}
+                            onChange={(e) => setBusinessConfig({ ...businessConfig, pwaBackgroundColor: e.target.value })}
+                            className="w-8 h-8 rounded-lg border border-slate-200 cursor-pointer p-0"
+                          />
+                          <input
+                            type="text"
+                            value={businessConfig.pwaBackgroundColor || '#0f172a'}
+                            onChange={(e) => setBusinessConfig({ ...businessConfig, pwaBackgroundColor: e.target.value })}
+                            className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg outline-none font-mono text-slate-800"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1596,6 +1755,164 @@ export default function SettingsPanel({ role, onChangeRole }: SettingsPanelProps
   ></iframe>
 </div>`}
                   </pre>
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* ================= SECTION 6: PRINTER CONFIGURATION & MANUAL ================= */}
+          {activeSubTab === 'printers' && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide">Cấu hình máy in nhãn nhiệt & name badge</h3>
+                  <p className="text-[11px] text-slate-450 mt-0.5">Xác lập các tham số in ấn cục bộ trên thiết bị tiếp đón tại sảnh.</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleSavePrinterSettings} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  
+                  {/* Toggle auto print */}
+                  <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div>
+                      <span className="text-xs font-bold text-slate-800 block">Tự động in khi check-in</span>
+                      <span className="text-[10px] text-slate-450 block mt-0.5">Mở hộp thoại in (hoặc in trực tiếp) ngay sau khi quét QR / duyệt check-in</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPrinterAutoPrint(!printerAutoPrint)}
+                      className="p-1 cursor-pointer border-none bg-transparent hover:scale-105 transition-transform"
+                    >
+                      {printerAutoPrint ? (
+                        <ToggleRight className="w-10 h-7 text-indigo-650" />
+                      ) : (
+                        <ToggleLeft className="w-10 h-7 text-slate-350" />
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Connection mode selection */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-500 block">Phương thức kết nối & in ấn</label>
+                    <select
+                      value={printerConnection}
+                      onChange={(e) => setPrinterConnection(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none font-bold bg-white text-slate-800"
+                    >
+                      <option value="browser">In qua hộp thoại trình duyệt (Mặc định)</option>
+                      <option value="kiosk">Chế độ in tự động Silent / Kiosk printing</option>
+                    </select>
+                  </div>
+
+                  {/* Paper size selection */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-500 block">Khổ giấy sticker thực tế</label>
+                    <select
+                      value={printerPaperSize}
+                      onChange={(e) => setPrinterPaperSize(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none font-bold bg-white text-slate-800"
+                    >
+                      <option value="100x150">Khổ lớn: 100mm x 150mm (A6 sticker)</option>
+                      <option value="80x50">Khổ chuẩn: 80mm x 50mm (8cm x 5cm Badge)</option>
+                      <option value="70x50">Khổ nhỏ: 70mm x 50mm (Mini Badge)</option>
+                      <option value="K80">Khổ hóa đơn: K80 (80mm cuộn liên tục)</option>
+                    </select>
+                  </div>
+
+                  {/* Margin configuration */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-500 block">Căn lề trống trang in (Margins)</label>
+                    <select
+                      value={printerMargin}
+                      onChange={(e) => setPrinterMargin(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none font-bold bg-white text-slate-800"
+                    >
+                      <option value="none">Không lề - Margin 0 (Khuyên dùng cho máy in nhiệt)</option>
+                      <option value="minimum">Lề tối thiểu (Minimum - 2mm)</option>
+                      <option value="default">Mặc định của hệ thống trình duyệt</option>
+                    </select>
+                  </div>
+
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl cursor-pointer hover:shadow transition-all text-xs border-none"
+                  >
+                    Lưu cấu hình máy in cục bộ
+                  </button>
+                </div>
+              </form>
+
+              {/* ================= INSTRUCTION MANUAL ================= */}
+              <div className="border-t border-slate-100 pt-6 mt-6 space-y-4">
+                <span className="text-[11.5px] font-black text-slate-800 uppercase tracking-widest block flex items-center gap-1.5">
+                  📖 HƯỚNG DẪN CẤU HÌNH VÀ SỬ DỤNG MÁY IN NHIỆT CHI TIẾT
+                </span>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  
+                  {/* Step 1 & 2 */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                    <h4 className="font-extrabold text-xs text-indigo-700 flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-[10px]">1</span>
+                      Thiết lập phần cứng & Driver máy in
+                    </h4>
+                    <ul className="list-disc pl-4 text-[10.5px] text-slate-650 space-y-1.5 leading-relaxed">
+                      <li>Kết nối máy in nhãn nhiệt (Xprinter, Zebra, Honeywell, Brother,...) qua cổng USB hoặc mạng LAN.</li>
+                      <li>Vào <strong>Control Panel</strong> &gt; <strong>Devices and Printers</strong> (hoặc Printers & Scanners trên Win 10/11).</li>
+                      <li>Nhấn chuột phải vào máy in, chọn <strong>Printing Preferences</strong>.</li>
+                      <li>Tại thẻ <strong>Page Setup</strong>, nhấn <strong>New</strong> để tạo khổ giấy mới khớp chính xác với kích thước sticker vật lý đang sử dụng (vd: 80mm x 50mm hoặc 100mm x 150mm).</li>
+                      <li>Đặt lề (Margins) trong driver bằng <strong>0mm</strong>.</li>
+                    </ul>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                    <h4 className="font-extrabold text-xs text-indigo-700 flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-[10px]">2</span>
+                      Cấu hình hộp thoại in trên Chrome / Edge
+                    </h4>
+                    <ul className="list-disc pl-4 text-[10.5px] text-slate-650 space-y-1.5 leading-relaxed">
+                      <li>Tại hộp thoại in hiển thị lần đầu trên hệ thống, chọn đúng tên máy in nhãn nhiệt.</li>
+                      <li><strong>Paper Size:</strong> Chọn đúng khổ giấy vừa tạo trong driver (vd: 80x50mm).</li>
+                      <li><strong>Margins:</strong> Chọn <strong>None</strong> (Không có) để nội dung thẻ in tràn viền chuẩn.</li>
+                      <li><strong>Headers and footers:</strong> Bỏ chọn (Uncheck) mục "Đầu trang và chân trang" để không bị dính link URL và ngày tháng.</li>
+                      <li><strong>Background graphics:</strong> Tích chọn (Check) để hiển thị nền màu của phân nhóm đại biểu (VIP/Báo cáo viên).</li>
+                    </ul>
+                  </div>
+
+                  {/* Step 4: Kiosk mode setup */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 md:col-span-2">
+                    <h4 className="font-extrabold text-xs text-indigo-700 flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-[10px]">3</span>
+                      Cấu hình In Tự Động Instant-Print (Kiosk Mode - Bỏ qua hộp thoại)
+                    </h4>
+                    <div className="text-[10.5px] text-slate-650 space-y-2.5 leading-relaxed">
+                      <p>
+                        Để hệ thống in tự động nhảy ra giấy in ngay lập tức khi check-in mà không cần người dùng click nút "Print" trên hộp thoại trình duyệt (in ngầm cực nhanh tại sảnh đón), hãy thực hiện:
+                      </p>
+                      <div className="space-y-1.5 pl-4 list-decimal">
+                        <div>1. Tắt toàn bộ các cửa sổ Chrome hoặc Edge đang chạy trên máy tính tiếp tiếp nhận.</div>
+                        <div>2. Nhấp chuột phải vào biểu tượng shortcut <strong>Google Chrome</strong> ngoài màn hình desktop &gt; chọn <strong>Properties</strong>.</div>
+                        <div>
+                          3. Tại thẻ <strong>Shortcut</strong>, tìm dòng <strong>Target</strong>. Di chuyển con trỏ xuống cuối chuỗi dẫn, cách ra một khoảng trắng và dán vào tham số:
+                          <code className="bg-slate-900 text-indigo-400 font-mono text-[10px] px-1.5 py-0.5 rounded ml-1 font-bold">--kiosk-printing</code>
+                        </div>
+                        <div className="text-[9.5px] text-slate-500 italic">
+                          Ví dụ dòng Target sau chỉnh sửa: <code className="bg-slate-900 text-slate-300 font-mono text-[9px] px-1 rounded">"C:\...\chrome.exe" --kiosk-printing</code>
+                        </div>
+                        <div>4. Nhấn <strong>Apply</strong> &gt; <strong>OK</strong> rồi khởi chạy lại Chrome bằng shortcut đó.</div>
+                      </div>
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-amber-900 text-[10px] font-bold">
+                        ⚠️ LƯU Ý QUAN TRỌNG: Cấu hình máy in được lưu riêng biệt trên từng thiết bị sảnh (localStorage). Do đó máy tiếp đón nào cần in trực tiếp thì phải bật cấu hình máy in và chỉnh Chrome trên máy đó.
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               </div>
 

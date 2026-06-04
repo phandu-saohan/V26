@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/manifest.json", "destination": "/api/manifest" },
     { "source": "/api/health", "destination": "/api/health" },
     { "source": "/api/email/send", "destination": "/api/email/send" },
     { "source": "/api/email/test-connection", "destination": "/api/email/test-connection" },

@@ -38,6 +38,12 @@ CREATE TABLE public.business_config (
     allow_self_cancellation BOOLEAN DEFAULT FALSE,
     auto_send_zns BOOLEAN DEFAULT TRUE,
     require_practice_code BOOLEAN DEFAULT TRUE,
+    pwa_name TEXT DEFAULT 'VSAPS 2026 - Hội Nghị Khoa Học Thẩm Mỹ',
+    pwa_short_name TEXT DEFAULT 'VSAPS 2026',
+    pwa_description TEXT DEFAULT 'Hệ thống quản lý Hội Nghị Khoa Học Thẩm Mỹ Quốc Tế Thường Niên VSAPS 2026',
+    pwa_logo_url TEXT DEFAULT '/icons/icon-512.png',
+    pwa_theme_color TEXT DEFAULT '#4f46e5',
+    pwa_background_color TEXT DEFAULT '#0f172a',
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

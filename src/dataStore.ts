@@ -82,6 +82,12 @@ const DEFAULT_BUSINESS_CONFIG: BusinessConfig = {
   allowSelfCancellation: false,
   autoSendZns: true,
   requirePracticeCode: true,
+  pwaName: "VSAPS 2026 - Hội Nghị Khoa Học Thẩm Mỹ",
+  pwaShortName: "VSAPS 2026",
+  pwaDescription: "Hệ thống quản lý Hội Nghị Khoa Học Thẩm Mỹ Quốc Tế Thường Niên VSAPS 2026",
+  pwaLogoUrl: "/icons/icon-512.png",
+  pwaThemeColor: "#4f46e5",
+  pwaBackgroundColor: "#0f172a",
 };
 
 export class DataStore {

@@ -209,6 +209,12 @@ export interface BusinessConfig {
   allowSelfCancellation: boolean;
   autoSendZns: boolean;
   requirePracticeCode: boolean;
+  pwaName?: string;
+  pwaShortName?: string;
+  pwaDescription?: string;
+  pwaLogoUrl?: string;
+  pwaThemeColor?: string;
+  pwaBackgroundColor?: string;
 }
 
 export interface EmbedScript {

@@ -432,6 +432,12 @@ export function mapBusinessConfigToDb(c: BusinessConfig): Record<string, any> {
     allow_self_cancellation: c.allowSelfCancellation,
     auto_send_zns: c.autoSendZns,
     require_practice_code: c.requirePracticeCode,
+    pwa_name: c.pwaName || '',
+    pwa_short_name: c.pwaShortName || '',
+    pwa_description: c.pwaDescription || '',
+    pwa_logo_url: c.pwaLogoUrl || '',
+    pwa_theme_color: c.pwaThemeColor || '',
+    pwa_background_color: c.pwaBackgroundColor || '',
   };
 }
 
@@ -446,6 +452,12 @@ export function mapDbToBusinessConfig(row: any): BusinessConfig {
     allowSelfCancellation: Boolean(row.allow_self_cancellation),
     autoSendZns: row.auto_send_zns !== false,
     requirePracticeCode: row.require_practice_code !== false,
+    pwaName: row.pwa_name || '',
+    pwaShortName: row.pwa_short_name || '',
+    pwaDescription: row.pwa_description || '',
+    pwaLogoUrl: row.pwa_logo_url || '',
+    pwaThemeColor: row.pwa_theme_color || '',
+    pwaBackgroundColor: row.pwa_background_color || '',
   };
 }
 

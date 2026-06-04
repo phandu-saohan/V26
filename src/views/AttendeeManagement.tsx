@@ -275,6 +275,20 @@ Ban Thư ký Hội nghị VSAPS 2026`
     contentRef: badgePrintRef,
     documentTitle: selectedBadgeAttendee ? `NAME_BADGE_${selectedBadgeAttendee.id}` : 'NAME_BADGE',
   });
+
+  // Auto-print effect when badge print modal is opened
+  React.useEffect(() => {
+    if (selectedBadgeAttendee) {
+      const isAutoPrint = localStorage.getItem('vsaps_printer_autoprint') === 'true';
+      if (isAutoPrint) {
+        const timer = setTimeout(() => {
+          handlePrintBadge();
+        }, 800); // 800ms allows modal animation and QR image to load
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [selectedBadgeAttendee, handlePrintBadge]);
+
   const [showBulkForm, setShowBulkForm] = useState(false);
   const [bulkInputText, setBulkInputText] = useState('');
   const [isDragActive, setIsDragActive] = useState(false);
@@ -541,6 +555,11 @@ Ban Thư ký Hội nghị VSAPS 2026`
           setIsPrintingBadge(false);
         }, 3500);
 
+        // Auto print badge if enabled in settings
+        if (localStorage.getItem('vsaps_printer_autoprint') === 'true') {
+          setSelectedBadgeAttendee(found);
+        }
+
         // Store offline if offline network active
         if (isOffline) {
           try {
@@ -606,6 +625,11 @@ Ban Thư ký Hội nghị VSAPS 2026`
         setTimeout(() => {
           setIsPrintingBadge(false);
         }, 3500);
+
+        // Auto print badge if enabled in settings
+        if (localStorage.getItem('vsaps_printer_autoprint') === 'true') {
+          setSelectedBadgeAttendee(found);
+        }
 
         if (isOffline) {
           try {
@@ -874,6 +898,11 @@ Ban Thư ký Hội nghị VSAPS 2026`
           msg: `THÀNH CÔNG: Chào mừng ${found.title} ${found.fullName} [${found.packageName}]`
         });
         loadAll();
+
+        // Auto print badge if enabled in settings
+        if (localStorage.getItem('vsaps_printer_autoprint') === 'true') {
+          setSelectedBadgeAttendee(found);
+        }
       }
     } else {
       playSoundSound('fail');
@@ -916,6 +945,11 @@ Ban Thư ký Hội nghị VSAPS 2026`
             msg: `[QUÉT CODE THÀNH CÔNG] Đã điểm danh ${found.title} ${found.fullName}!`
           });
           loadAll();
+
+          // Auto print badge if enabled in settings
+          if (localStorage.getItem('vsaps_printer_autoprint') === 'true') {
+            setSelectedBadgeAttendee(found);
+          }
         }
       }
       setSimulatedScannerActive(false);
@@ -3028,103 +3062,188 @@ Ban Thư ký Hội nghị VSAPS 2026`
         );
       })()}
 
-      {/* Name-Badge Print Modal (8cm x 5cm format design) */}
-      {selectedBadgeAttendee && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden border border-slate-200 shadow-2xl animate-fade-in text-slate-900">
-            <div className="bg-slate-900 p-4 border-b border-slate-800 flex justify-between items-center text-white">
-              <div className="flex items-center gap-2">
-                <Printer className="w-4 h-4 text-indigo-400" />
-                <h4 className="font-extrabold text-xs tracking-wider uppercase">Căn Lề In Thẻ Đeo (Name-Badge 8x5cm)</h4>
-              </div>
-              <button 
-                onClick={() => setSelectedBadgeAttendee(null)}
-                className="text-slate-400 hover:text-white font-bold text-sm cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
+      {/* Name-Badge Print Modal (Dynamic Format Design based on settings) */}
+      {selectedBadgeAttendee && (() => {
+        const printerPaperSize = localStorage.getItem('vsaps_printer_papersize') || '100x150';
+        const printerMargin = localStorage.getItem('vsaps_printer_margin') || 'none';
+        
+        let badgeWidth = '8cm';
+        let badgeHeight = '5cm';
+        let nameFontSize = '17px';
+        let orgFontSize = '9.5px';
+        let groupFontSize = '9.5px';
+        let labelFontSize = '6.5px';
+        let idFontSize = '7.5px';
+        let qrSize = '28px';
 
-            <div className="p-6 bg-slate-105 flex flex-col items-center justify-center gap-4">
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Xem trước tỷ lệ thực vật lý (Chuẩn Ngang 80mm - Cao 50mm)</p>
-              
-              {/* Printable name badge container */}
-              <div 
-                id="vsaps-physical-badge"
-                ref={badgePrintRef}
-                className="bg-white border-2 border-dashed border-slate-300 p-3 flex flex-col justify-between select-none relative shadow-md rounded-md overflow-hidden bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px] print:border-none print:shadow-none print:m-0 print:p-3"
-                style={{ width: '8cm', height: '5cm' }}
-              >
-                {/* Header - No conference name */}
-                <div className="flex justify-end items-center border-b border-slate-150 pb-1.5 mb-1">
-                  <div className="text-right">
-                    <span className="text-[7px] font-black bg-rose-600 text-white px-1 py-0.2 rounded font-mono">OCT 2026</span>
+        if (printerPaperSize === '100x150') {
+          badgeWidth = '10cm';
+          badgeHeight = '15cm';
+          nameFontSize = '28px';
+          orgFontSize = '14px';
+          groupFontSize = '14px';
+          labelFontSize = '10px';
+          idFontSize = '12px';
+          qrSize = '64px';
+        } else if (printerPaperSize === '70x50') {
+          badgeWidth = '7cm';
+          badgeHeight = '5cm';
+          nameFontSize = '15px';
+          orgFontSize = '8.5px';
+          groupFontSize = '8.5px';
+          labelFontSize = '6px';
+          idFontSize = '7px';
+          qrSize = '24px';
+        } else if (printerPaperSize === 'K80') {
+          badgeWidth = '8cm';
+          badgeHeight = '8cm';
+          nameFontSize = '18px';
+          orgFontSize = '10px';
+          groupFontSize = '10px';
+          labelFontSize = '7px';
+          idFontSize = '8px';
+          qrSize = '32px';
+        }
+
+        const marginCss = printerMargin === 'none' ? '0' : printerMargin === 'minimum' ? '2mm' : 'auto';
+
+        return (
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden border border-slate-200 shadow-2xl animate-fade-in text-slate-900">
+              <div className="bg-slate-900 p-4 border-b border-slate-800 flex justify-between items-center text-white">
+                <div className="flex items-center gap-2">
+                  <Printer className="w-4 h-4 text-indigo-400" />
+                  <h4 className="font-extrabold text-xs tracking-wider uppercase">Căn Lề In Thẻ Đeo ({badgeWidth} x {badgeHeight})</h4>
+                </div>
+                <button 
+                  onClick={() => setSelectedBadgeAttendee(null)}
+                  className="text-slate-400 hover:text-white font-bold text-sm cursor-pointer border-none bg-transparent"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="p-6 bg-slate-105 flex flex-col items-center justify-center gap-4">
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Xem trước tỷ lệ nhãn in ({badgeWidth} x {badgeHeight})</p>
+                
+                {/* Printable name badge container */}
+                <div 
+                  id="vsaps-physical-badge"
+                  ref={badgePrintRef}
+                  className="bg-white border-2 border-dashed border-slate-300 p-3 flex flex-col justify-between select-none relative shadow-md rounded-md overflow-hidden bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px] print:border-none print:shadow-none print:m-0"
+                  style={{ width: badgeWidth, height: badgeHeight }}
+                >
+                  <style dangerouslySetInnerHTML={{ __html: `
+                    @page {
+                      size: ${badgeWidth} ${badgeHeight};
+                      margin: ${marginCss};
+                    }
+                    @media print {
+                      body {
+                        -webkit-print-color-adjust: exact;
+                      }
+                      #vsaps-physical-badge {
+                        width: ${badgeWidth} !important;
+                        height: ${badgeHeight} !important;
+                        border: none !important;
+                        box-shadow: none !important;
+                        margin: 0 !important;
+                        padding: ${printerMargin === 'none' ? '8px' : '16px'} !important;
+                      }
+                    }
+                  `}} />
+
+                  {/* Header - No conference name */}
+                  <div className="flex justify-end items-center border-b border-slate-150 pb-1.5 mb-1">
+                    <div className="text-right">
+                      <span className="text-[7px] font-black bg-rose-600 text-white px-1 py-0.2 rounded font-mono">OCT 2026</span>
+                    </div>
+                  </div>
+
+                  {/* Central Body: Title & Name extreme bold */}
+                  <div className="my-auto text-center py-2">
+                    <h2 
+                      className="font-black text-slate-950 uppercase leading-none tracking-tight"
+                      style={{ fontSize: nameFontSize }}
+                    >
+                      {selectedBadgeAttendee.title} {selectedBadgeAttendee.fullName}
+                    </h2>
+                    <p 
+                      className="font-bold text-teal-750 truncate mt-1.5"
+                      style={{ fontSize: orgFontSize }}
+                    >
+                      Cơ quan: {selectedBadgeAttendee.organization}
+                    </p>
+                  </div>
+
+                  {/* Bottom row: Classification & QR bar code */}
+                  <div className="flex justify-between items-end border-t border-slate-100 pt-1.5">
+                    <div>
+                      <span 
+                        className="text-slate-400 font-mono block"
+                        style={{ fontSize: labelFontSize }}
+                      >
+                        PHÂN NHÓM ĐẠI BIỂU
+                      </span>
+                      <span 
+                        className={`font-black uppercase px-2 py-0.5 rounded tracking-wide block mt-1 ${
+                          selectedBadgeAttendee.packageId === 'pkg-vip' ? 'bg-amber-500 text-white' :
+                          selectedBadgeAttendee.id.includes('SPK') ? 'bg-indigo-600 text-white' : 'bg-emerald-600 text-white'
+                        }`}
+                        style={{ fontSize: groupFontSize }}
+                      >
+                        ★ {selectedBadgeAttendee.packageId === 'pkg-vip' ? 'ĐẠI BIỂU VIP' : 
+                            selectedBadgeAttendee.id.includes('SPK') ? 'BÁO CÁO VIÊN' : 'ĐẠI BIỂU'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-1.5">
+                      <span 
+                        className="font-mono text-slate-450 font-bold block"
+                        style={{ fontSize: idFontSize }}
+                      >
+                        {selectedBadgeAttendee.id}
+                      </span>
+                      <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(selectedBadgeAttendee.qrCodeValue)}`}
+                        alt="Mini Code"
+                        className="object-contain"
+                        style={{ width: qrSize, height: qrSize }}
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Central Body: Title & Name extreme bold */}
-                <div className="my-auto text-center py-2">
-                  <h2 className="text-[17px] font-black text-slate-950 uppercase leading-none tracking-tight">
-                    {selectedBadgeAttendee.title} {selectedBadgeAttendee.fullName}
-                  </h2>
-                  <p className="text-[9.5px] font-bold text-teal-700 truncate mt-1">
-                    Cơ quan: {selectedBadgeAttendee.organization}
-                  </p>
-                </div>
-
-                {/* Bottom row: Classification & QR bar code */}
-                <div className="flex justify-between items-end border-t border-slate-100 pt-1.5">
-                  <div>
-                    <span className="text-[6.5px] text-slate-400 font-mono block">PHÂN NHÓM ĐẠI BIỂU</span>
-                    <span className={`text-[9.5px] font-black uppercase px-2 py-0.5 rounded tracking-wide block mt-1 ${
-                      selectedBadgeAttendee.packageId === 'pkg-vip' ? 'bg-amber-500 text-white' :
-                      selectedBadgeAttendee.id.includes('SPK') ? 'bg-indigo-600 text-white' : 'bg-emerald-600 text-white'
-                    }`}>
-                      ★ {selectedBadgeAttendee.packageId === 'pkg-vip' ? 'ĐẠI BIỂU VIP' : 
-                          selectedBadgeAttendee.id.includes('SPK') ? 'BÁO CÁO VIÊN' : 'ĐẠI BIỂU'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[7.5px] font-mono text-slate-450 font-bold block">{selectedBadgeAttendee.id}</span>
-                    <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(selectedBadgeAttendee.qrCodeValue)}`}
-                      alt="Mini Code"
-                      className="w-7 h-7 object-contain"
-                    />
-                  </div>
+                {/* Technical help notes */}
+                <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg text-[10.5px] text-amber-900 w-full space-y-1">
+                  <p className="font-bold">💡 Gợi ý cấu hình máy in nhiệt ({printerPaperSize}):</p>
+                  <p>• Khổ giấy hiện tại: <strong>{badgeWidth} x {badgeHeight}</strong>. Căn lề lề: <strong>{printerMargin === 'none' ? '0mm (Không lề)' : printerMargin === 'minimum' ? '2mm (Tối thiểu)' : 'Mặc định'}</strong>.</p>
+                  <p>• Nhấn <strong>"Mở Print Dialog"</strong> để gửi lệnh trực tiếp tới máy in nhãn nhiệt tại sảnh tiếp đón.</p>
                 </div>
               </div>
 
-              {/* Technical help notes */}
-              <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg text-[10.5px] text-amber-900 w-full space-y-1">
-                <p className="font-bold">💡 Gợi ý cấu hình máy in nhiệt (Xprinter/Honeywell):</p>
-                <p>• Kích thước giấy sticker: <strong>80mm x 50mm</strong>. Căn lề trống <strong>0mm</strong>.</p>
-                <p>• Nhấn <strong>"Mở Print Dialog"</strong> để gửi lệnh trực tiếp tới máy in nhiệt tại sảnh tiếp đón.</p>
+              <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2.5">
+                <button
+                  onClick={() => setSelectedBadgeAttendee(null)}
+                  className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-650 font-bold text-xs rounded-lg border border-slate-300 cursor-pointer"
+                >
+                  Đóng lại
+                </button>
+                <button
+                  onClick={() => {
+                    playSoundSound('success');
+                    handlePrintBadge();
+                  }}
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg flex items-center gap-1.5 cursor-pointer shadow-sm border-none"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  In Thẻ Nhãn ({badgeWidth} x {badgeHeight})
+                </button>
               </div>
-            </div>
-
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2.5">
-              <button
-                onClick={() => setSelectedBadgeAttendee(null)}
-                className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-650 font-bold text-xs rounded-lg border border-slate-300 cursor-pointer"
-              >
-                Đóng lại
-              </button>
-              <button
-                onClick={() => {
-                  playSoundSound('success');
-                  handlePrintBadge();
-                }}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg flex items-center gap-1.5 cursor-pointer shadow-sm border-none"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                In Thẻ Sticker (8x5cm)
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Draft & Send Quick Participation Confirmation Email Modal */}
       {notifyAttendee && (
