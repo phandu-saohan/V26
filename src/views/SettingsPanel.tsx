@@ -1,0 +1,2026 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState } from 'react';
+import { 
+  Shield, 
+  Key, 
+  Database, 
+  Mail, 
+  Plus, 
+  Trash, 
+  Edit2, 
+  CheckCircle, 
+  Copy, 
+  Smartphone, 
+  Laptop, 
+  Code, 
+  ExternalLink, 
+  Sliders, 
+  Info, 
+  Eye, 
+  X,
+  Settings,
+  Layers,
+  Globe,
+  SlidersHorizontal,
+  Check,
+  ToggleLeft,
+  ToggleRight,
+  UserPlus,
+  Users,
+  MapPin,
+  Calendar,
+  AlertTriangle
+} from 'lucide-react';
+import { store } from '../dataStore';
+import { 
+  UserAccount, 
+  RegistrationPackage, 
+  ZaloConfig, 
+  EmailConfig, 
+  SupabaseConfig, 
+  Role, 
+  NotificationTemplate,
+  BusinessConfig,
+  EmbedScript
+} from '../types';
+import RichTextEditor from '../components/RichTextEditor';
+
+interface SettingsPanelProps {
+  role: Role;
+  onChangeRole?: (role: Role) => void;
+}
+
+export default function SettingsPanel({ role, onChangeRole }: SettingsPanelProps) {
+  // Navigation tab state
+  const [activeSubTab, setActiveSubTab] = useState<'business' | 'packages' | 'integrations' | 'operators' | 'embeds'>('business');
+
+  // Business Config state
+  const [businessConfig, setBusinessConfig] = useState<BusinessConfig>(store.getBusinessConfig());
+
+  // Packages state
+  const [packages, setPackages] = useState<RegistrationPackage[]>(store.getPackages());
+  const [showPackageModal, setShowPackageModal] = useState(false);
+  const [isPackageEdit, setIsPackageEdit] = useState(false);
+  const [formPkgId, setFormPkgId] = useState('');
+  const [formPkgName, setFormPkgName] = useState('');
+  const [formPkgFee, setFormPkgFee] = useState(0);
+  const [formPkgDesc, setFormPkgDesc] = useState('');
+  const [formPkgBenefits, setFormPkgBenefits] = useState('');
+  const [formPkgIsActive, setFormPkgIsActive] = useState(true);
+  const [formPkgIncludesCme, setFormPkgIncludesCme] = useState(true);
+  const [formPkgIncludesGala, setFormPkgIncludesGala] = useState(false);
+
+  // Credentials integration state
+  const [zaloConfig, setZaloConfig] = useState<ZaloConfig>(store.getZaloConfig());
+  const [emailConfig, setEmailConfig] = useState<EmailConfig>(store.getEmailConfig());
+  const [supabaseConfig, setSupabaseConfig] = useState<SupabaseConfig>(store.getSupabaseConfig());
+  const [copiedSchema, setCopiedSchema] = useState(false);
+
+  // Connection & API Testing variables
+  const [zaloTesting, setZaloTesting] = useState(false);
+  const [zaloTestResult, setZaloTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [smtpTesting, setSmtpTesting] = useState(false);
+  const [smtpTestResult, setSmtpTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [emailSendingTest, setEmailSendingTest] = useState(false);
+  const [emailSendingResult, setEmailSendingResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Operators/Users management states
+  const [users, setUsers] = useState<UserAccount[]>(store.getUsers());
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [isUserEdit, setIsUserEdit] = useState(false);
+  const [formUserId, setFormUserId] = useState('');
+  const [formUserEmail, setFormUserEmail] = useState('');
+  const [formUserName, setFormUserName] = useState('');
+  const [formUserRole, setFormUserRole] = useState<Role>('ctv');
+  const [formUserStatus, setFormUserStatus] = useState<'active' | 'inactive'>('active');
+  const [formUserPermissions, setFormUserPermissions] = useState<string[]>([]);
+
+  // Embed Scripts states
+  const [embedScripts, setEmbedScripts] = useState<EmbedScript[]>(store.getEmbedScripts());
+  const [showEmbedModal, setShowEmbedModal] = useState(false);
+  const [isEmbedEdit, setIsEmbedEdit] = useState(false);
+  const [formEmbedId, setFormEmbedId] = useState('');
+  const [formEmbedName, setFormEmbedName] = useState('');
+  const [formEmbedTarget, setFormEmbedTarget] = useState<'delegate' | 'speaker' | 'sponsor' | 'analytics' | 'custom'>('delegate');
+  const [formEmbedCode, setFormEmbedCode] = useState('');
+  const [formEmbedNotes, setFormEmbedNotes] = useState('');
+  const [formEmbedIsActive, setFormEmbedIsActive] = useState(true);
+  
+  // Direct Quick Copy Code visual helper states
+  const [iframeHeight, setIframeHeight] = useState('950');
+  const [copiedCodeSection, setCopiedCodeSection] = useState<string | null>(null);
+  const [selectedEmbedForm, setSelectedEmbedForm] = useState<'delegate' | 'speaker' | 'sponsor'>('delegate');
+
+  // Reload caches helper
+  const reloadData = () => {
+    setUsers([...store.getUsers()]);
+    setPackages([...store.getPackages()]);
+    setEmbedScripts([...store.getEmbedScripts()]);
+    setBusinessConfig(store.getBusinessConfig());
+  };
+
+  // --- Handlers for Business Config ---
+  const handleSaveBusinessSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    store.saveBusinessConfig(businessConfig);
+    alert('Đã cập nhật cấu hình Nghiệp vụ sự kiện lưu vào database thành công!');
+    reloadData();
+  };
+
+  // --- Handlers for Registration Packages ---
+  const handleOpenAddPackage = () => {
+    if (role !== 'admin') {
+      alert('Chỉ tài khoản tối cao Admin mới có quyền tạo thêm gói đăng ký!');
+      return;
+    }
+    setIsPackageEdit(false);
+    setFormPkgId('pkg-' + Math.floor(Math.random() * 900 + 100));
+    setFormPkgName('');
+    setFormPkgFee(500000);
+    setFormPkgDesc('');
+    setFormPkgBenefits('');
+    setFormPkgIsActive(true);
+    setFormPkgIncludesCme(true);
+    setFormPkgIncludesGala(false);
+    setShowPackageModal(true);
+  };
+
+  const handleOpenEditPackage = (pkg: RegistrationPackage) => {
+    if (role !== 'admin') {
+      alert('Chỉ tài khoản tối cao Admin mới có quyền sửa đổi thông tin gói!');
+      return;
+    }
+    setIsPackageEdit(true);
+    setFormPkgId(pkg.id);
+    setFormPkgName(pkg.name);
+    setFormPkgFee(pkg.fee);
+    setFormPkgDesc(pkg.description || '');
+    setFormPkgBenefits((pkg.benefits || []).join(', '));
+    setFormPkgIsActive(pkg.isActive);
+    setFormPkgIncludesCme(typeof pkg.includesCme === 'undefined' ? true : pkg.includesCme);
+    setFormPkgIncludesGala(!!pkg.includesGala);
+    setShowPackageModal(true);
+  };
+
+  const handleSavePackageSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (role !== 'admin') return;
+
+    if (!formPkgId || !formPkgName) {
+      alert('Vui lòng cung cấp mã ID và Tên gói đăng ký!');
+      return;
+    }
+
+    const benefitsArray = formPkgBenefits
+      .split(',')
+      .map(b => b.trim())
+      .filter(b => b.length > 0);
+
+    const updatedPkg: RegistrationPackage = {
+      id: formPkgId,
+      name: formPkgName,
+      fee: Number(formPkgFee),
+      description: formPkgDesc,
+      benefits: benefitsArray,
+      isActive: formPkgIsActive,
+      includesCme: formPkgIncludesCme,
+      includesGala: formPkgIncludesGala
+    };
+
+    store.savePackage(updatedPkg);
+    setShowPackageModal(false);
+    reloadData();
+  };
+
+  const handleDeletePackage = (id: string) => {
+    if (role !== 'admin') {
+      alert('Quyền hạn bị từ chối!');
+      return;
+    }
+
+    const connectedAttendees = store.getAttendees().filter(a => a.packageId === id);
+    if (connectedAttendees.length > 0) {
+      if (!window.confirm(`Hệ thống phát hiện ${connectedAttendees.length} Đại biểu đã mua gói này. Nếu xóa, hiển thị phí của các đại biểu này có thể lỗi. Bạn có thực sự muốn xóa?`)) {
+        return;
+      }
+    } else {
+      if (!window.confirm('Chắc chắn muốn xóa bỏ gói đăng ký này vĩnh viễn?')) {
+        return;
+      }
+    }
+
+    store.deletePackage(id);
+    reloadData();
+  };
+
+  // --- Handlers for Integration (Zalo OA, SMTP, Supabase) ---
+  const handleSaveZaloSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    store.saveZaloConfig(zaloConfig);
+    alert('Đã cập nhật đồng bộ các tham số Cổng API Zalo OA!');
+  };
+
+  const handleVerifyZaloTokenObj = async () => {
+    setZaloTesting(true);
+    setZaloTestResult(null);
+    try {
+      const response = await fetch('/api/zalo/verify-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken: zaloConfig.accessToken })
+      });
+      const data = await response.json();
+      setZaloTestResult({
+        success: data.success,
+        message: data.message
+      });
+    } catch (err: any) {
+      setZaloTestResult({
+        success: false,
+        message: `Lỗi kết nối cổng API: ${err.message || 'Không xách định'}`
+      });
+    } finally {
+      setZaloTesting(false);
+    }
+  };
+
+  const handleRefreshZaloToken = async () => {
+    if (!zaloConfig.appId || !zaloConfig.secretKey || !zaloConfig.refreshToken) {
+      alert('Vui lòng kiểm tra lại thông tin App ID, Secret Key và Refresh Token trước khi thực hiện làm mới.');
+      return;
+    }
+    setZaloTesting(true);
+    setZaloTestResult(null);
+    try {
+      const response = await fetch('/api/zalo/refresh-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          appId: zaloConfig.appId,
+          secretKey: zaloConfig.secretKey,
+          refreshToken: zaloConfig.refreshToken
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        const updated = {
+          ...zaloConfig,
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken || zaloConfig.refreshToken,
+          accessTokenUpdatedAt: new Date().toISOString()
+        };
+        setZaloConfig(updated);
+        store.saveZaloConfig(updated);
+        setZaloTestResult({
+          success: true,
+          message: `${data.message}\nℹ️ Access Token mới diễn hoạt trong 24 giờ tới.`
+        });
+        alert('Gia hạn Cổng Access Token Zalo thành công!');
+      } else {
+        setZaloTestResult({
+          success: false,
+          message: `Không thể gia hạn Token: ${data.message || 'Mất phản hồi từ cổng'}`
+        });
+      }
+    } catch (err: any) {
+      setZaloTestResult({
+        success: false,
+        message: `Lỗi kết nối cổng gia hạn Zalo: ${err.message}`
+      });
+    } finally {
+      setZaloTesting(false);
+    }
+  };
+
+  const handleSendTestZaloMessage = async () => {
+    if (!zaloConfig.testPhone) {
+      alert('Vui lòng nhập Số điện thoại nhận tin thử nghiệm.');
+      return;
+    }
+    setZaloTesting(true);
+    setZaloTestResult(null);
+    try {
+      let phoneWithPrefix = zaloConfig.testPhone.replace(/[^0-9]/g, '');
+      if (phoneWithPrefix.startsWith('0')) {
+        phoneWithPrefix = '84' + phoneWithPrefix.substring(1);
+      }
+      const response = await fetch('/api/zalo/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          config: zaloConfig,
+          payload: {
+            recipient: { phone: phoneWithPrefix },
+            template_id: 'tmpl-reg-zalo',
+            template_data: {
+              title: 'BS.',
+              fullname: 'Khách mời Thử nghiệm',
+              package: 'Gói Hội nghị VSAPS Chuyên sâu',
+              code: 'VSAPS-ZALO-PRO',
+              payment_status: 'Đã hoàn tất (Test)',
+              qr_url: 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=VSAPS-ZALO-PRO-SUCCESS'
+            }
+          }
+        })
+      });
+      const data = await response.json();
+      if (data.success && data.data?.error === 0) {
+        setZaloTestResult({
+          success: true,
+          message: `Truyền phát ZNS thành công! ID tin nhắn: ${data.data?.data?.msg_id || 'msg-zalo-888'}`
+        });
+      } else {
+        setZaloTestResult({
+          success: false,
+          message: `Zalo phản hồi lỗi: ${data.data?.message || data.error || 'Mã lỗi bất thường từ cổng Zalo'}`
+        });
+      }
+    } catch (err: any) {
+      setZaloTestResult({
+        success: false,
+        message: `Truyền tin thất bại: ${err.message}`
+      });
+    } finally {
+      setZaloTesting(false);
+    }
+  };
+
+  const handleSaveSMTPSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    store.saveEmailConfig(emailConfig);
+    alert('Đã lưu cấu hình Cổng Mail SMTP Outgoing Server!');
+  };
+
+  const handleTestSmtpConnectionObj = async () => {
+    setSmtpTesting(true);
+    setSmtpTestResult(null);
+    try {
+      const response = await fetch('/api/email/test-connection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          smtpHost: emailConfig.smtpHost,
+          smtpPort: emailConfig.smtpPort,
+          smtpUser: emailConfig.smtpUser,
+          smtpPass: emailConfig.smtpPass
+        })
+      });
+      const data = await response.json();
+      setSmtpTestResult({
+        success: data.success,
+        message: data.message
+      });
+    } catch (err: any) {
+      setSmtpTestResult({
+        success: false,
+        message: `Lỗi kết nối máy chủ Mail: ${err.message}`
+      });
+    } finally {
+      setSmtpTesting(false);
+    }
+  };
+
+  const handleSendTestMailObj = async () => {
+    if (!emailConfig.testEmail) {
+      alert('Vui lòng điền Email nhận test trước!');
+      return;
+    }
+    setEmailSendingTest(true);
+    setEmailSendingResult(null);
+    try {
+      const testContentHtml = `
+        <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; color: #1e293b;">
+          <h2 style="color: #4f46e5; text-transform: uppercase;">Máy Chủ SMTP Kích Hoạt Thành Công</h2>
+          <p>Kính gửi Quý đại diện quản trị,</p>
+          <p>Thư này xác nhận cổng gửi Email Outcoming qua hình thức SMTP của bạn đã cấu hình thành công.</p>
+          <div style="background-color: #f8fafc; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 13px; border-left: 4px solid #4f46e5; margin: 20px 0;">
+            • SMTP Server: ${emailConfig.smtpHost}:${emailConfig.smtpPort}<br/>
+            • Email nguồn: ${emailConfig.senderEmail}<br/>
+            • Thời gian: ${new Date().toLocaleString()}
+          </div>
+          <p style="font-size: 11px; color: #94a3b8;">Email tự động phục vụ đo lường cổng đăng ký Hội nghị.</p>
+        </div>
+      `;
+      const response = await fetch('/api/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          config: emailConfig,
+          payload: {
+            to: emailConfig.testEmail,
+            subject: `[SMTP SUCCESS] Email kiểm định kết nối cổng thông tin VSAPS`,
+            body: testContentHtml
+          }
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setEmailSendingResult({
+          success: true,
+          message: `Thư xác thực đã bắn thành công tới ${emailConfig.testEmail}! Kiểm tra cả hòm thư Spam.`
+        });
+      } else {
+        setEmailSendingResult({
+          success: false,
+          message: `Lỗi truyền phát SMTP: ${data.error || 'Chi tiết gửi lỗi máy chủ.'}`
+        });
+      }
+    } catch (err: any) {
+      setEmailSendingResult({
+        success: false,
+        message: `Lỗi kết nối API: ${err.message}`
+      });
+    } finally {
+      setEmailSendingTest(false);
+    }
+  };
+
+  const handleSaveSupabaseSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    store.saveSupabaseConfig(supabaseConfig);
+    alert('Đã cập nhật cấu hình thông số kết nối Supabase Cloud Database!');
+  };
+
+  const handleCopySQLScript = () => {
+    navigator.clipboard.writeText(store.getSupabaseSqlSchema());
+    setCopiedSchema(true);
+    setTimeout(() => setCopiedSchema(false), 2000);
+  };
+
+  // --- Handlers for Users & Operators Granular CRUD ---
+  const handleOpenAddOperator = () => {
+    if (role !== 'admin') {
+      alert('Không đủ quyền hạn! Chỉ Trưởng Ban Tổ Chức (Admin) mới có quyền tạo tài khoản.');
+      return;
+    }
+    setIsUserEdit(false);
+    setFormUserId('USR-' + Math.floor(Math.random() * 900 + 100));
+    setFormUserEmail('');
+    setFormUserName('');
+    setFormUserRole('ctv');
+    setFormUserStatus('active');
+    setFormUserPermissions(['approve_attendees']);
+    setShowUserModal(true);
+  };
+
+  const handleOpenEditOperator = (u: UserAccount) => {
+    if (role !== 'admin') {
+      alert('Không đủ quyền hạn!');
+      return;
+    }
+    setIsUserEdit(true);
+    setFormUserId(u.id);
+    setFormUserEmail(u.email);
+    setFormUserName(u.name);
+    setFormUserRole(u.role);
+    setFormUserStatus(u.status);
+    setFormUserPermissions(u.permissions || []);
+    setShowUserModal(true);
+  };
+
+  const handleSaveUserSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formUserEmail || !formUserName) {
+      alert('Vui lòng điền đủ Họ tên và Tên tài khoản (Email).');
+      return;
+    }
+
+    const payload: UserAccount = {
+      id: formUserId,
+      email: formUserEmail.trim().toLowerCase(),
+      name: formUserName.trim(),
+      role: formUserRole,
+      status: formUserStatus,
+      permissions: formUserPermissions
+    };
+
+    store.saveUser(payload);
+    setShowUserModal(false);
+    reloadData();
+  };
+
+  const handleDeleteOperator = (id: string) => {
+    if (role !== 'admin') {
+      alert('Chỉ quản trị viên mới được xóa cộng tác viên!');
+      return;
+    }
+    const target = users.find(u => u.id === id);
+    if (target && target.email === 'admin') {
+      alert('Không cho phép xóa tài khoản quản trị hệ thống tối cao.');
+      return;
+    }
+    if (window.confirm(`Bạn có chắc muốn xóa nhân sự ${target?.name} khỏi hệ thống vận hành?`)) {
+      store.deleteUser(id);
+      reloadData();
+    }
+  };
+
+  const handleToggleUserPermission = (perm: string) => {
+    if (formUserPermissions.includes(perm)) {
+      setFormUserPermissions(formUserPermissions.filter(p => p !== perm));
+    } else {
+      setFormUserPermissions([...formUserPermissions, perm]);
+    }
+  };
+
+  // --- Handlers for Embed Scripts CRUD ---
+  const handleOpenAddEmbed = () => {
+    setIsEmbedEdit(false);
+    setFormEmbedId('emb-' + Math.floor(Math.random() * 900 + 100));
+    setFormEmbedName('');
+    setFormEmbedTarget('delegate');
+    setFormEmbedCode('');
+    setFormEmbedNotes('');
+    setFormEmbedIsActive(true);
+    setShowEmbedModal(true);
+  };
+
+  const handleOpenEditEmbed = (emb: EmbedScript) => {
+    setIsEmbedEdit(true);
+    setFormEmbedId(emb.id);
+    setFormEmbedName(emb.name);
+    setFormEmbedTarget(emb.targetType);
+    setFormEmbedCode(emb.code);
+    setFormEmbedNotes(emb.notes || '');
+    setFormEmbedIsActive(emb.isActive);
+    setShowEmbedModal(true);
+  };
+
+  const handleSaveEmbedSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formEmbedName || !formEmbedCode) {
+      alert('Vui lòng nhập Tên nhãn cấu hình và Mã nhúng của bạn!');
+      return;
+    }
+
+    const payload: EmbedScript = {
+      id: formEmbedId,
+      name: formEmbedName,
+      targetType: formEmbedTarget,
+      code: formEmbedCode,
+      notes: formEmbedNotes,
+      isActive: formEmbedIsActive,
+      createdAt: new Date().toISOString()
+    };
+
+    store.saveEmbedScript(payload);
+    setShowEmbedModal(false);
+    reloadData();
+  };
+
+  const handleDeleteEmbed = (id: string) => {
+    if (window.confirm('Bạn có đồng ý gỡ bỏ mã nhúng tích hợp này không? Hành động này không thể hoàn tác.')) {
+      store.deleteEmbedScript(id);
+      reloadData();
+    }
+  };
+
+  const handleToggleEmbedActive = (emb: EmbedScript) => {
+    const updated = { ...emb, isActive: !emb.isActive };
+    store.saveEmbedScript(updated);
+    reloadData();
+  };
+
+  // Helper resolvers for dynamic iframe string code copy paste helper
+  const getEmbedFormUrl = (formType: 'delegate' | 'speaker' | 'sponsor') => {
+    const origin = window.location.origin;
+    const path = window.location.pathname;
+    let viewName = 'register-delegate';
+    if (formType === 'speaker') viewName = 'register-speaker';
+    if (formType === 'sponsor') viewName = 'register-sponsor';
+    return `${origin}${path}?view=${viewName}`;
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-6 font-sans">
+      
+      {/* Upper header section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+        <div>
+          <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+            <Settings className="w-5 h-5 text-indigo-600 animate-spin-slow" />
+            CÀI ĐẶT HỆ THỐNG & TÍCH HỢP
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">
+            Điều phối quy chế sự kiện, thiết lập phân quyền chi tiết, cấu hình luồng dữ liệu Zalo ZNS, SMTP và mã nhúng bên thứ ba.
+          </p>
+        </div>
+
+        {/* Current user role banner */}
+        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-1.5 self-start md:self-auto shadow-sm">
+          <Shield className="w-4 h-4 text-slate-500" />
+          <span className="text-[10.5px] font-bold text-slate-600 uppercase tracking-wide">
+            Vai trò vận hành:
+          </span>
+          <span className="text-[10px] font-black uppercase text-white bg-slate-800 px-2 py-0.5 rounded-md">
+            {role === 'admin' ? 'Trưởng BTC (Admin)' : role === 'btc' ? 'Thành viên BTC' : 'Cộng tác viên (CTV)'}
+          </span>
+        </div>
+      </div>
+
+      {/* Main Container Grid with left side navigations and right panel view layouts */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+        
+        {/* Left sidebar Navigation panel */}
+        <div className="md:col-span-3 bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-1.5">
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block px-2 mb-2">DANH MỤC CẤU HÌNH</span>
+          
+          <button
+            onClick={() => setActiveSubTab('business')}
+            className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2.5 cursor-pointer border-none ${
+              activeSubTab === 'business'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-150 hover:text-slate-900 bg-transparent'
+            }`}
+          >
+            <SlidersHorizontal className="w-4 h-4 shrink-0" />
+            <span>🛠️ Cấu hình Nghiệp vụ</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSubTab('packages')}
+            className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2.5 cursor-pointer border-none ${
+              activeSubTab === 'packages'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-150 hover:text-slate-900 bg-transparent'
+            }`}
+          >
+            <Layers className="w-4 h-4 shrink-0" />
+            <span>🎟️ Gói Đại Biểu Đăng Ký</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSubTab('integrations')}
+            className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2.5 cursor-pointer border-none ${
+              activeSubTab === 'integrations'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-150 hover:text-slate-900 bg-transparent'
+            }`}
+          >
+            <Database className="w-4 h-4 shrink-0" />
+            <span>🔌 Cổng Tích Hợp API</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSubTab('operators')}
+            className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2.5 cursor-pointer border-none ${
+              activeSubTab === 'operators'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-150 hover:text-slate-900 bg-transparent'
+            }`}
+          >
+            <Users className="w-4 h-4 shrink-0" />
+            <span>👥 Phân Quyền Vận Hành</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSubTab('embeds')}
+            className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2.5 cursor-pointer border-none ${
+              activeSubTab === 'embeds'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-150 hover:text-slate-900 bg-transparent'
+            }`}
+          >
+            <Code className="w-4 h-4 shrink-0" />
+            <span>💻 Quản lý Mã Nhúng (WP)</span>
+          </button>
+
+          {/* Quick diagnostic tips */}
+          <div className="pt-4 mt-4 border-t border-slate-200 px-2 space-y-2 text-[10.5px] text-slate-500 leading-normal">
+            <span className="font-extrabold text-slate-800 block text-[10px]">🖥️ DATABASE SYNC:</span>
+            <p>Tất cả cấu hình được đồng bộ hóa tức thời về hệ thống Supabase/Local để ngăn ngừa gián đoạn truy xuất ngoài cộng đồng.</p>
+          </div>
+        </div>
+
+        {/* Right content panel layout */}
+        <div className="md:col-span-9 bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+          
+          {/* ================= SECTION 1: BUSINESS LOGISTICS ================= */}
+          {activeSubTab === 'business' && (
+            <div className="space-y-6">
+              <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide">Cấu hình nghiệp vụ sự kiện</h3>
+                  <p className="text-[11px] text-slate-450 mt-0.5">Xác lập các luật nghiệp vụ, ngưỡng đăng tải và danh tính đơn vị tổ chức.</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleSaveBusinessSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-500 block">Tên sự kiện / Hội nghị *</label>
+                    <input
+                      type="text"
+                      required
+                      value={businessConfig.eventName}
+                      onChange={(e) => setBusinessConfig({ ...businessConfig, eventName: e.target.value })}
+                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none font-bold text-slate-800"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-500 block">Đơn vị chủ trì / Tổ chức *</label>
+                    <input
+                      type="text"
+                      required
+                      value={businessConfig.organizerName}
+                      onChange={(e) => setBusinessConfig({ ...businessConfig, organizerName: e.target.value })}
+                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none font-bold text-slate-800"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-500 block flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                      Thời gian diễn ra *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={businessConfig.eventDate}
+                      onChange={(e) => setBusinessConfig({ ...businessConfig, eventDate: e.target.value })}
+                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none font-medium text-slate-800"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-500 block flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                      Địa chỉ tổ chức *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={businessConfig.eventLocation}
+                      onChange={(e) => setBusinessConfig({ ...businessConfig, eventLocation: e.target.value })}
+                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none font-medium text-slate-800"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-500 block">Giới hạn đại biểu đăng ký (Ngưỡng cảnh báo)</label>
+                    <input
+                      type="number"
+                      required
+                      min={10}
+                      max={10000}
+                      value={businessConfig.maxRegistrations}
+                      onChange={(e) => setBusinessConfig({ ...businessConfig, maxRegistrations: Number(e.target.value) })}
+                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:ring-1 focus:ring-indigo-500 outline-none font-mono font-bold text-slate-850"
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 mt-4">
+                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest block">LUẬT PHÊ DUYỆT & TRUYỀN PHÁT</span>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Toggle require payment proof */}
+                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-150">
+                      <div>
+                        <span className="text-xs font-bold text-slate-850 block">Yêu cầu ảnh chuyển khoản</span>
+                        <span className="text-[10px] text-slate-400">Bắt buộc đại biểu tải minh chứng chuyển khoản khi đăng ký ngoài cộng đồng</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setBusinessConfig({ ...businessConfig, requirePaymentProof: !businessConfig.requirePaymentProof })}
+                        className="p-1 cursor-pointer border-none bg-transparent hover:scale-105 transition-transform"
+                      >
+                        {businessConfig.requirePaymentProof ? (
+                          <ToggleRight className="w-10 h-7 text-indigo-600" />
+                        ) : (
+                          <ToggleLeft className="w-10 h-7 text-slate-350" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Toggle allow cancellation */}
+                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-150">
+                      <div>
+                        <span className="text-xs font-bold text-slate-850 block">Cho phép đại biểu tự hủy</span>
+                        <span className="text-[10px] text-slate-400">Đại biểu có thể tự hủy đăng ký hoặc rút bài báo cáo qua cổng tích hợp</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setBusinessConfig({ ...businessConfig, allowSelfCancellation: !businessConfig.allowSelfCancellation })}
+                        className="p-1 cursor-pointer border-none bg-transparent hover:scale-105 transition-transform"
+                      >
+                        {businessConfig.allowSelfCancellation ? (
+                          <ToggleRight className="w-10 h-7 text-indigo-600" />
+                        ) : (
+                          <ToggleLeft className="w-10 h-7 text-slate-350" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Toggle instant ZNS */}
+                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-150">
+                      <div>
+                        <span className="text-xs font-bold text-slate-850 block">Tự động gửi Zalo ZNS lập tức</span>
+                        <span className="text-[10px] text-slate-400">Tự động truyền tin mẫu ZNS thành công ngay sau khi đại biểu gửi form</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setBusinessConfig({ ...businessConfig, autoSendZns: !businessConfig.autoSendZns })}
+                        className="p-1 cursor-pointer border-none bg-transparent hover:scale-105 transition-transform"
+                      >
+                        {businessConfig.autoSendZns ? (
+                          <ToggleRight className="w-10 h-7 text-indigo-600" />
+                        ) : (
+                          <ToggleLeft className="w-10 h-7 text-slate-350" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Toggle require practice code */}
+                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-150">
+                      <div>
+                        <span className="text-xs font-bold text-slate-850 block">Yêu cầu CCHN khi xin CME</span>
+                        <span className="text-[10px] text-slate-400">Yêu cầu điền Mã chứng chỉ hành nghề y tế nếu tick chọn yêu cầu cấp CME</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setBusinessConfig({ ...businessConfig, requirePracticeCode: !businessConfig.requirePracticeCode })}
+                        className="p-1 cursor-pointer border-none bg-transparent hover:scale-105 transition-transform"
+                      >
+                        {businessConfig.requirePracticeCode ? (
+                          <ToggleRight className="w-10 h-7 text-indigo-600" />
+                        ) : (
+                          <ToggleLeft className="w-10 h-7 text-slate-350" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex justify-end">
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl cursor-pointer hover:shadow transition-all text-xs border-none"
+                  >
+                    Lưu cấu hình Nghiệp vụ sự kiện
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* ================= SECTION 2: REGISTRATION PACKAGES CRUD ================= */}
+          {activeSubTab === 'packages' && (
+            <div className="space-y-6">
+              <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide">Quản lý các gói đại biểu đăng ký</h3>
+                  <p className="text-[11px] text-slate-450 mt-0.5">Xác lập các cấu trúc định mức đóng góp tham dự, quyền hạn CME và Gala Dinner.</p>
+                </div>
+                {role === 'admin' && (
+                  <button
+                    onClick={handleOpenAddPackage}
+                    className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer border-none"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Đăng ký gói mới
+                  </button>
+                )}
+              </div>
+
+              {/* Package cards list container block */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {packages.map(pkg => (
+                  <div key={pkg.id} className="border border-slate-200 bg-white hover:border-slate-300 rounded-2xl p-5 relative transition-all shadow-sm space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <span className="text-[9px] font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                          {pkg.id}
+                        </span>
+                        <h4 className="font-extrabold text-xs text-slate-900">{pkg.name}</h4>
+                      </div>
+                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
+                        pkg.isActive ? 'text-emerald-700 bg-emerald-50 border border-emerald-200' : 'text-slate-500 bg-slate-100 border border-slate-200'
+                      }`}>
+                        {pkg.isActive ? '● Đang mở nhận' : '○ Đang đóng'}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-base font-black text-slate-850">
+                          {pkg.fee === 0 ? 'Miễn Phí' : pkg.fee.toLocaleString()}
+                        </span>
+                        {pkg.fee > 0 && <span className="text-[9px] text-slate-400 font-bold">VNĐ / Đại biểu</span>}
+                      </div>
+
+                      {pkg.description && (
+                        <div className="text-[10.5px] text-slate-500 leading-normal line-clamp-2" dangerouslySetInnerHTML={{ __html: pkg.description }} />
+                      )}
+
+                      {/* Package special specifications tags */}
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {pkg.includesCme && (
+                          <span className="text-[8px] font-black uppercase text-indigo-600 bg-indigo-100/40 px-2 py-0.5 rounded">
+                            ✓ Có Cấp CME
+                          </span>
+                        )}
+                        {pkg.includesGala && (
+                          <span className="text-[8px] font-black uppercase text-amber-600 bg-amber-100/40 px-2 py-0.5 rounded">
+                            ✓ Có Dự Tiệc Gala
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Benefits string split chips list */}
+                    {pkg.benefits && pkg.benefits.length > 0 && (
+                      <div className="border-t border-slate-100 pt-3 space-y-1.5">
+                        <span className="text-[9px] font-black text-slate-450 uppercase tracking-widest block">ĐẶC QUYỀN ĐI KÈM:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {pkg.benefits.map((b, i) => (
+                            <span key={i} className="text-[9px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                              <Check className="w-3 h-3 text-indigo-600 shrink-0" />
+                              {b}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action buttons footer for package */}
+                    {role === 'admin' && (
+                      <div className="border-t border-slate-100 pt-3 flex justify-end gap-1 px-1">
+                        <button
+                          onClick={() => handleOpenEditPackage(pkg)}
+                          className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-lg cursor-pointer border-none bg-transparent flex items-center gap-1 text-[10px] font-bold"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>Chỉnh sửa</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeletePackage(pkg.id)}
+                          className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg cursor-pointer border-none bg-transparent flex items-center gap-1 text-[10px] font-bold"
+                        >
+                          <Trash className="w-3.5 h-3.5" />
+                          <span>Gỡ bỏ</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ================= SECTION 3: INTEGRATION API CONNECTION CONFIG ================= */}
+          {activeSubTab === 'integrations' && (
+            <div className="space-y-6">
+              <div className="border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide">Cấu hình liên kết cổng tích hợp API</h3>
+                <p className="text-[11px] text-slate-450 mt-0.5">Quản lý định biên truyền phát Email SMTP Server, Zalo OA Gateway và Supabase Cloud Database.</p>
+              </div>
+
+              {/* Left & Right layout: columns for form config and verification test tools */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* 1. Zalo OA Connection settings card */}
+                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                  <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest block border-b border-slate-200 pb-1.5">
+                    🪪 ZALO OA API CREDENTIALS
+                  </span>
+                  <form onSubmit={handleSaveZaloSubmit} className="space-y-3.5">
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 block mb-1">APP ID</label>
+                      <input
+                        type="text"
+                        value={zaloConfig.appId}
+                        onChange={(e) => setZaloConfig({ ...zaloConfig, appId: e.target.value })}
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 block mb-1">SECRET KEY</label>
+                      <input
+                        type="password"
+                        value={zaloConfig.secretKey}
+                        onChange={(e) => setZaloConfig({ ...zaloConfig, secretKey: e.target.value })}
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 block mb-1">OFFICIAL ACCOUNT ID (OA ID)</label>
+                      <input
+                        type="text"
+                        value={zaloConfig.oaId}
+                        onChange={(e) => setZaloConfig({ ...zaloConfig, oaId: e.target.value })}
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 block mb-1">ACCESS TOKEN (ZALO OA)</label>
+                      <textarea
+                        value={zaloConfig.accessToken}
+                        onChange={(e) => setZaloConfig({ ...zaloConfig, accessToken: e.target.value })}
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono"
+                        rows={2}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase">REFRESH TOKEN (Gia hạn tự động sau 23 giờ)</label>
+                        {zaloConfig.accessTokenUpdatedAt && (
+                          <span className="text-[8.5px] font-black text-emerald-600">
+                            ⏱️ Cập nhật: {new Date(zaloConfig.accessTokenUpdatedAt).toLocaleTimeString('vi-VN')} {new Date(zaloConfig.accessTokenUpdatedAt).toLocaleDateString('vi-VN')}
+                          </span>
+                        )}
+                      </div>
+                      <textarea
+                        value={zaloConfig.refreshToken || ''}
+                        onChange={(e) => setZaloConfig({ ...zaloConfig, refreshToken: e.target.value })}
+                        placeholder="Nhập Refresh Token được cấp từ Zalo để tự động gia hạn Access Token"
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono"
+                        rows={2}
+                      />
+                      <p className="text-[9.5px] text-slate-450 mt-1 leading-snug">
+                        ⚠️ <span className="font-bold text-amber-700">Lưu ý:</span> ACCESS TOKEN của Zalo OA sẽ hết hạn sau 24 giờ. 
+                        Hệ thống sẽ dùng REFRESH TOKEN định kỳ sau 23 giờ để tự động lấy Token mới, giúp luồng truyền phát ZNS không bị ngắt quãng.
+                      </p>
+                    </div>
+                    <button type="submit" className="w-full py-2 bg-slate-800 hover:bg-slate-900 border-none text-white text-[10px] font-black uppercase tracking-wider rounded-lg cursor-pointer">
+                      Đồng Bộ cấu hình Zalo API
+                    </button>
+                  </form>
+
+                  <div className="border-t border-slate-250 pt-3 space-y-2 mt-4">
+                    <span className="text-[9px] font-black text-indigo-700 block">⚡ CHẠY TEST TRUYỀN PHÁT ZALO CO-GATEWAY:</span>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={handleVerifyZaloTokenObj}
+                        disabled={zaloTesting}
+                        className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-750 rounded-lg cursor-pointer text-[10px] font-bold"
+                      >
+                        {zaloTesting ? 'Đang xác thực...' : '1. Kiểm tra Token'}
+                      </button>
+                      <button
+                        onClick={handleRefreshZaloToken}
+                        disabled={zaloTesting}
+                        className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-750 rounded-lg cursor-pointer text-[10px] font-bold"
+                        title="Yêu cầu cổng OAuth cấp Access Token mới ngay lập tức"
+                      >
+                        {zaloTesting ? 'Đang làm mới...' : '🔄 Làm mới Token'}
+                      </button>
+                      <div className="flex-1 flex gap-1.5">
+                        <input
+                          type="text"
+                          placeholder="Số ĐT nhận test (09...)"
+                          value={zaloConfig.testPhone}
+                          onChange={(e) => setZaloConfig({ ...zaloConfig, testPhone: e.target.value })}
+                          className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-mono flex-1 min-w-[100px]"
+                        />
+                        <button
+                          onClick={handleSendTestZaloMessage}
+                          disabled={zaloTesting}
+                          className="px-2.5 py-1.5 bg-blue-50 text-blue-750 border border-blue-200 hover:bg-blue-100 rounded-lg text-[10px] font-bold cursor-pointer whitespace-nowrap"
+                        >
+                          2. Gửi test ZNS
+                        </button>
+                      </div>
+                    </div>
+
+                    {zaloTestResult && (
+                      <div className={`p-3 rounded-lg border text-[10px] font-mono leading-normal mt-2 ${
+                        zaloTestResult.success ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
+                      }`}>
+                        <div className="font-extrabold flex items-center gap-1.5 mb-0.5">
+                          <span className={`w-1.5 h-1.5 rounded-full ${zaloTestResult.success ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                          <span>Zalo OA Verification Gate:</span>
+                        </div>
+                        <p>{zaloTestResult.message}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 2. SMTP Mailer Server settings card */}
+                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                  <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest block border-b border-slate-200 pb-1.5">
+                    📧 OUTGOING MAIL SERVER (SMTP)
+                  </span>
+                  <form onSubmit={handleSaveSMTPSubmit} className="space-y-3">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="col-span-2">
+                        <label className="text-[9px] font-black text-slate-400 block mb-1">SMTP HOST</label>
+                        <input
+                          type="text"
+                          value={emailConfig.smtpHost}
+                          onChange={(e) => setEmailConfig({ ...emailConfig, smtpHost: e.target.value })}
+                          className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono"
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <label className="text-[9px] font-black text-slate-400 block mb-1">PORT</label>
+                        <input
+                          type="number"
+                          value={emailConfig.smtpPort}
+                          onChange={(e) => setEmailConfig({ ...emailConfig, smtpPort: Number(e.target.value) })}
+                          className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 block mb-1">SMTP USER ACCOUNT (EMAIL)</label>
+                      <input
+                        type="text"
+                        value={emailConfig.smtpUser}
+                        onChange={(e) => setEmailConfig({ ...emailConfig, smtpUser: e.target.value })}
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 block mb-1">SMTP ACCOUNT PASSWORD (SMTP PASS)</label>
+                      <input
+                        type="password"
+                        value={emailConfig.smtpPass}
+                        onChange={(e) => setEmailConfig({ ...emailConfig, smtpPass: e.target.value })}
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[9px] font-black text-slate-400 block mb-1">MÃ SENDER NAME</label>
+                        <input
+                          type="text"
+                          value={emailConfig.senderName}
+                          onChange={(e) => setEmailConfig({ ...emailConfig, senderName: e.target.value })}
+                          className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-black text-slate-400 block mb-1">MÃ SENDER EMAIL</label>
+                        <input
+                          type="email"
+                          value={emailConfig.senderEmail}
+                          onChange={(e) => setEmailConfig({ ...emailConfig, senderEmail: e.target.value })}
+                          className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs"
+                        />
+                      </div>
+                    </div>
+                    <button type="submit" className="w-full py-2 bg-slate-800 hover:bg-slate-900 border-none text-white text-[10px] font-black uppercase tracking-wider rounded-lg cursor-pointer">
+                      Đồng bộ thông số Mail SMTP
+                    </button>
+                  </form>
+
+                  <div className="border-t border-slate-250 pt-3 space-y-2 mt-4">
+                    <span className="text-[9px] font-black text-indigo-700 block">⚡ KIỂM TRA LUỒNG BẮN THƯ SMTP:</span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleTestSmtpConnectionObj}
+                        disabled={smtpTesting}
+                        className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-750 rounded-lg cursor-pointer text-[10px] font-bold"
+                      >
+                        {smtpTesting ? 'Đang kiểm tra...' : '1. Check SMTP'}
+                      </button>
+                      <div className="flex-1 flex gap-1.5">
+                        <input
+                          type="email"
+                          placeholder="Email nhận test..."
+                          value={emailConfig.testEmail}
+                          onChange={(e) => setEmailConfig({ ...emailConfig, testEmail: e.target.value })}
+                          className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-mono flex-1 min-w-[100px]"
+                        />
+                        <button
+                          onClick={handleSendTestMailObj}
+                          disabled={emailSendingTest}
+                          className="px-2.5 py-1.5 bg-blue-50 text-blue-750 border border-blue-200 hover:bg-blue-100 rounded-lg text-[10px] font-bold cursor-pointer whitespace-nowrap"
+                        >
+                          2. Gửi mail test
+                        </button>
+                      </div>
+                    </div>
+
+                    {smtpTestResult && (
+                      <div className={`p-3 rounded-lg border text-[10px] font-mono leading-normal ${
+                        smtpTestResult.success ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
+                      }`}>
+                        <span className="font-extrabold block mb-0.5">SMTP Authentication:</span>
+                        <p>{smtpTestResult.message}</p>
+                      </div>
+                    )}
+                    {emailSendingResult && (
+                      <div className={`p-3 rounded-lg border text-[10px] font-mono leading-normal ${
+                        emailSendingResult.success ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
+                      }`}>
+                        <span className="font-extrabold block mb-0.5">SMTP Transmission:</span>
+                        <p>{emailSendingResult.message}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Supabase Credentials link and Postgres DDL viewer table */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start mt-4">
+                
+                {/* Supabase inputs */}
+                <div className="lg:col-span-5 bg-slate-55 p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                  <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest block border-b border-slate-200 pb-1.5">
+                    ⚡ LIÊN KẾT SUPABASE CLOUD (REAL-TIME STORAGE)
+                  </span>
+                  <form onSubmit={handleSaveSupabaseSubmit} className="space-y-3.5">
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 block mb-1">SUPABASE URL</label>
+                      <input
+                        type="text"
+                        value={supabaseConfig.apiUrl}
+                        onChange={(e) => setSupabaseConfig({ ...supabaseConfig, url: e.target.value })}
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono"
+                        placeholder="https://your-project.supabase.co"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 block mb-1">ANON PUBLIC API KEY</label>
+                      <input
+                        type="password"
+                        value={supabaseConfig.anonKey}
+                        onChange={(e) => setSupabaseConfig({ ...supabaseConfig, anonKey: e.target.value })}
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono"
+                        placeholder="eyJhbG..."
+                      />
+                    </div>
+                    <button type="submit" className="w-full py-2.5 text-[10.5px] font-black uppercase tracking-wider text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl cursor-pointer transition-all border-none shadow-sm">
+                      Đồng bộ liên kết Supabase Credentials
+                    </button>
+                  </form>
+                </div>
+
+                {/* SQL DDL postgres viewer panel */}
+                <div className="lg:col-span-7 bg-slate-950 p-5 rounded-2xl border border-slate-800 text-slate-300 space-y-3 self-stretch flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center border-b border-slate-900 pb-2">
+                      <span className="text-[9.5px] font-mono font-black text-indigo-400 tracking-wider uppercase flex items-center gap-1.5">
+                        <Code className="w-4 h-4 text-indigo-400" />
+                        SUPABASE POSTGRESQL DDL STRUCTURES
+                      </span>
+                      <button
+                        onClick={handleCopySQLScript}
+                        className="px-2.5 py-1 bg-slate-900 hover:bg-slate-850 rounded-lg text-slate-400 hover:text-white transition-all text-[9px] font-black font-mono cursor-pointer border border-slate-800"
+                      >
+                        {copiedSchema ? 'COPIED!' : 'COPY SQL'}
+                      </button>
+                    </div>
+                    <p className="text-[10.5px] text-slate-400 leading-normal">
+                      Hãy sao chép cấu trúc mã nguồn SQL định nghĩa bảng dưới đây rồi dán vào trang <strong className="text-white font-bold">SQL Editor</strong> bên cổng hành chính quản trị của dự án <strong>Supabase</strong> để lập tức kiến thiết các bảng đồng bộ thực tế.
+                    </p>
+                    <div className="bg-slate-900/60 border border-slate-900 rounded-xl p-3">
+                      <pre className="font-mono text-[8px] text-slate-400 max-h-40 overflow-y-auto leading-relaxed whitespace-pre select-all h-36">
+                        {store.getSupabaseSqlSchema()}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* ================= SECTION 4: DETAILED HUMAN ROLE AND PERMISSIONS CRUD ================= */}
+          {activeSubTab === 'operators' && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide">Cấu hình phân quyền vận hành hệ thống</h3>
+                  <p className="text-[11px] text-slate-450 mt-0.5">Xác lập phạm vi thẩm quyền của nhân sự thuộc ban tổ chức đối với hồ sơ tài chính, đại biểu và phê duyệt.</p>
+                </div>
+                {role === 'admin' && (
+                  <button
+                    onClick={handleOpenAddOperator}
+                    className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer border-none"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Thêm nhân sự mới
+                  </button>
+                )}
+              </div>
+
+              {/* Responsive table mapping operators and granular flags list */}
+              <div className="overflow-x-auto border border-slate-200 rounded-2xl bg-white shadow-sm">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-250 transition-all font-sans text-[10.5px]">
+                      <th className="p-3.5 pl-5">Tên hiển thị nhân sự</th>
+                      <th className="p-3.5">Email tài khoản</th>
+                      <th className="p-3.5">Vai trò</th>
+                      <th className="p-3.5">Phân quyền chi tiết</th>
+                      <th className="p-3.5 text-center">Trạng thái</th>
+                      {role === 'admin' && <th className="p-3.5 pr-5 text-right">Thao tác</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                    {users.map(u => (
+                      <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="p-3.5 pl-5">
+                          <div className="space-y-0.5">
+                            <span className="font-extrabold text-slate-900 block">{u.name}</span>
+                            <span className="text-[8.5px] text-slate-400 font-mono tracking-wide px-1.5 py-0.5 bg-slate-100 rounded">
+                              {u.id}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-3.5 font-mono text-[11px] text-slate-600">{u.email}</td>
+                        <td className="p-3.5 font-bold">
+                          <span className={`px-2 py-0.5 rounded text-[9.5px] font-mono text-center uppercase inline-block font-extrabold ${
+                            u.role === 'admin' ? 'bg-red-50 text-red-700' : u.role === 'btc' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-700'
+                          }`}>
+                            {u.role === 'admin' ? 'Admin' : u.role === 'btc' ? 'BTC' : 'CTV'}
+                          </span>
+                        </td>
+                        <td className="p-3.5">
+                          <div className="flex flex-wrap gap-1 max-w-[250px]">
+                            {(!u.permissions || u.permissions.length === 0) ? (
+                              <span className="text-[9px] text-slate-400 italic">Mặc định</span>
+                            ) : (
+                              u.permissions.map((p, i) => {
+                                const mapText: Record<string, string> = {
+                                  'approve_attendees': 'Duyệt đại biểu',
+                                  'manage_speakers': 'Duyệt báo cáo viên',
+                                  'finance_records': 'Tính năng tài chính',
+                                  'system_settings': 'Sửa cấu hình hệ thống'
+                                };
+                                return (
+                                  <span key={i} className="text-[8.5px] font-bold bg-indigo-50 text-indigo-750 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                                    <Check className="w-2.5 h-2.5 text-indigo-600" />
+                                    {mapText[p] || p}
+                                  </span>
+                                );
+                              })
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-3.5 text-center">
+                          <button
+                            disabled={role !== 'admin' || u.email === 'admin'}
+                            onClick={() => {
+                              const updatedUser = { ...u, status: u.status === 'active' ? 'inactive' : ('active' as any) };
+                              store.saveUser(updatedUser);
+                              reloadData();
+                            }}
+                            className={`px-2 py-0.5 rounded-full text-[9px] border font-black uppercase text-center cursor-pointer disabled:cursor-not-allowed ${
+                              u.status === 'active'
+                                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                : 'bg-slate-100 border-slate-200 text-slate-500'
+                            }`}
+                          >
+                            {u.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
+                          </button>
+                        </td>
+                        {role === 'admin' && (
+                          <td className="p-3.5 pr-5 text-right">
+                            <div className="flex justify-end gap-1.5">
+                              <button
+                                onClick={() => handleOpenEditOperator(u)}
+                                className="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800 border-none bg-transparent cursor-pointer"
+                                title="Chỉnh sửa chi tiết"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteOperator(u.id)}
+                                disabled={u.email === 'admin'}
+                                className="p-1 hover:bg-rose-50 rounded text-rose-450 hover:text-rose-705 border-none bg-transparent cursor-pointer disabled:opacity-20"
+                                title="Xóa nhân sự"
+                              >
+                                <Trash className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ================= SECTION 5: WORDPRESS EMBEDS & CUSTOM SCRIPTS CRUD ================= */}
+          {activeSubTab === 'embeds' && (
+            <div className="space-y-6">
+              
+              {/* Informational banner of integrated embeds scripts with community */}
+              <div className="bg-gradient-to-r from-slate-50 to-indigo-50/20 border border-slate-200 p-4 rounded-xl flex items-start gap-3 text-xs leading-relaxed text-slate-700">
+                <Info className="w-5 h-5 shrink-0 text-indigo-500" />
+                <div className="space-y-1">
+                  <h4 className="font-extrabold text-slate-900 text-xs">CƠ CHẾ KẾT NỐI MÃ NHÚNG TÍCH HỢP (WORDPRESS / HEADERS / ANALYTICS)</h4>
+                  <p className="text-[10.5px]">
+                    Bạn có thể tự do khởi tạo và CRUD lưu trữ không giới hạn các đoạn mã / scripts nhúng lên máy chủ Supabase. Toàn bộ các mã Iframe, mã nhúng Google Analytics, pixel theo dõi Facebook hay mã hỗ trợ trực tuyến đều có thể được quản lý tiện lợi tại đây.
+                  </p>
+                </div>
+              </div>
+
+              {/* Dynamic Embed Script list & config controllers row */}
+              <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide">Danh sách mã nhúng trong database</h3>
+                  <p className="text-[11px] text-slate-450 mt-0.5">CRUD các tài nguyên mã nhúng và sao chép an toàn để dán vào WordPress của bạn.</p>
+                </div>
+                <button
+                  onClick={handleOpenAddEmbed}
+                  className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer border-none"
+                >
+                  <Plus className="w-4 h-4" />
+                  Thành lập mã nhúng mới
+                </button>
+              </div>
+
+              {/* DB entries collection view */}
+              <div className="grid grid-cols-1 gap-4">
+                {embedScripts.map(script => (
+                  <div key={script.id} className="border border-slate-200 bg-white hover:border-slate-350 rounded-2xl p-4 transition-all relative space-y-3.5 shadow-sm">
+                    <div className="flex justify-between items-start">
+                      <div className="gap-2 flex flex-col md:flex-row md:items-center">
+                        <span className="text-[9px] font-mono font-black text-white bg-slate-800 px-2.5 py-0.5 rounded-lg">
+                          {script.id}
+                        </span>
+                        <h4 className="font-extrabold text-xs text-slate-900">{script.name}</h4>
+                        <span className="text-[8.5px] font-black uppercase bg-indigo-50 text-indigo-750 px-2 py-0.5 rounded">
+                          {script.targetType === 'delegate' ? 'Form Đại biểu WP' : script.targetType === 'speaker' ? 'Form Báo cáo viên WP' : script.targetType === 'sponsor' ? 'Form Tài trợ WP' : script.targetType === 'analytics' ? 'Tracking Analytics' : 'Custom Snippet'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => handleToggleEmbedActive(script)}
+                          className={`text-[9.5px] font-bold bg-transparent border-none cursor-pointer hover:underline flex items-center gap-1 ${
+                            script.isActive ? 'text-emerald-600' : 'text-slate-400'
+                          }`}
+                        >
+                          {script.isActive ? '● Đang kích hoạt' : '○ Tạm ngắt'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {script.notes && (
+                      <p className="text-[10.5px] text-slate-450 italic font-sans leading-relaxed">
+                        Mẹo tích hợp: {script.notes}
+                      </p>
+                    )}
+
+                    {/* Pre-rendered code area and quick action keys */}
+                    <div className="bg-slate-950 p-3.5 rounded-xl text-[10px] font-mono text-slate-300 relative border border-slate-850 group select-all">
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(script.code);
+                          setCopiedCodeSection(script.id);
+                          setTimeout(() => setCopiedCodeSection(null), 2000);
+                        }}
+                        className="absolute right-2.5 top-2 bg-slate-900 text-slate-400 hover:text-white border border-slate-800 rounded-lg px-2 py-1 text-[8.5px] cursor-pointer"
+                      >
+                        {copiedCodeSection === script.id ? 'COPIED!' : 'COPY CODE'}
+                      </button>
+                      <pre className="overflow-x-auto max-h-24 pr-20 select-all font-mono leading-normal whitespace-pre-wrap mt-0.5">
+                        {script.code}
+                      </pre>
+                    </div>
+
+                    {/* Footer crud button tasks */}
+                    <div className="pt-2 border-t border-slate-100 flex justify-end gap-3 text-[10.5px] font-bold">
+                      <button
+                        onClick={() => handleOpenEditEmbed(script)}
+                        className="text-slate-500 hover:text-slate-850 border-none bg-transparent cursor-pointer flex items-center gap-1"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        Chỉnh sửa
+                      </button>
+                      <button
+                        onClick={() => handleDeleteEmbed(script.id)}
+                        className="text-rose-500 hover:text-rose-700 border-none bg-transparent cursor-pointer flex items-center gap-1"
+                      >
+                        <Trash className="w-3.5 h-3.5" />
+                        Nhấn giải phóng
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Dynamic standard quick WordPress copy generator tool */}
+              <div className="bg-slate-900 p-6 rounded-2xl border border-slate-950/80 text-xs text-slate-350 space-y-5 mt-6">
+                <span className="text-[9.5px] font-mono font-black text-amber-400 tracking-wider block uppercase">⚡ TRÌNH TẠO MÃ NHÚNG NHANH CHO WORDPRESS GUTEBERG/ELEMENTOR</span>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-slate-300 font-bold block text-[10.5px]">1. Chọn mẫu biểu mẫu:</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { id: 'delegate', label: 'Đại Biểu' },
+                          { id: 'speaker', label: 'Bài Báo' },
+                          { id: 'sponsor', label: 'Tài Trợ' },
+                        ].map(f => (
+                          <button
+                            key={f.id}
+                            type="button"
+                            onClick={() => setSelectedEmbedForm(f.id as any)}
+                            className={`py-1.5 text-[10px] font-extrabold rounded-lg cursor-pointer border text-center transition-all ${
+                              selectedEmbedForm === f.id
+                                ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+                                : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-850 hover:text-white'
+                            }`}
+                          >
+                            {f.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-slate-300">
+                        <label className="font-bold text-[10.5px]">2. Chỉ số chiều cao iframe:</label>
+                        <span className="font-mono text-indigo-400 font-black">{iframeHeight}px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="800"
+                        max="1400"
+                        step="50"
+                        value={iframeHeight}
+                        onChange={(e) => setIframeHeight(e.target.value)}
+                        className="w-full accent-indigo-500 h-1 cursor-pointer bg-slate-950 rounded-lg appearance-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2.5 bg-slate-950/70 p-4 rounded-xl border border-slate-850">
+                    <div className="flex justify-between items-center text-white">
+                      <span className="text-[10px] text-slate-400 font-bold">MẮT XEM TRƯỚC URL:</span>
+                      <a href={getEmbedFormUrl(selectedEmbedForm)} target="_blank" rel="noreferrer" className="text-indigo-400 font-black text-[10px] uppercase flex items-center gap-1.5 hover:underline">
+                        Bật xem trước
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                    <p className="text-[10.5px] text-slate-500 leading-normal">
+                      Mã nhúng dãn chiều cao thông minh tự bọc sandbox cho phép đại biểu giao lưu tuyệt vời trên di động mà không lo bị co rút khung hiển thị.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Gutenberg clean frame format block */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center bg-slate-950/80 p-2.5 px-3.5 rounded-t-lg border-b border-slate-900 text-[10.5px]">
+                    <span className="font-mono font-bold text-slate-300">Iframe Responsive Gutenberg/Elementor Block Code</span>
+                    <button
+                      onClick={() => {
+                        const finalCode = `<div id="vsaps-frame-root-${selectedEmbedForm}" style="width: 100%; overflow: hidden; position: relative;">
+  <iframe id="vsaps-embed-frame" src="${getEmbedFormUrl(selectedEmbedForm)}" width="100%" height="${iframeHeight}px" style="border: none; width: 100%; display: block; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06);" scrolling="yes" loading="lazy" sandbox="allow-top-navigation allow-scripts allow-forms allow-same-origin allow-popups"></iframe>
+</div>`;
+                        navigator.clipboard.writeText(finalCode);
+                        setCopiedCodeSection('quickger');
+                        setTimeout(() => setCopiedCodeSection(null), 2000);
+                      }}
+                      className="text-amber-400 font-bold border-none bg-transparent cursor-pointer hover:underline text-[10px]"
+                    >
+                      {copiedCodeSection === 'quickger' ? 'Đã sao chép!' : 'COPY CODE'}
+                    </button>
+                  </div>
+                  <pre className="bg-slate-950/40 p-4 border border-slate-900 rounded-b-lg font-mono text-[8.5px] text-emerald-400 h-28 overflow-y-auto leading-relaxed select-all">
+                    {`<div id="vsaps-frame-root-${selectedEmbedForm}" style="width: 100%; overflow: hidden; position: relative;">
+  <iframe 
+    id="vsaps-embed-frame-${selectedEmbedForm}" 
+    src="${getEmbedFormUrl(selectedEmbedForm)}" 
+    width="100%" 
+    height="${iframeHeight}px" 
+    style="border: none; width: 100%; display: block; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06);" 
+    scrolling="yes" 
+    loading="lazy" 
+    sandbox="allow-top-navigation allow-scripts allow-forms allow-same-origin allow-popups"
+  ></iframe>
+</div>`}
+                  </pre>
+                </div>
+              </div>
+
+            </div>
+          )}
+
+        </div>
+
+      </div>
+
+      {/* ================= MODAL: REGISTRATION PACKAGE MANAGER CRUD ================= */}
+      {showPackageModal && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden border border-slate-150 shadow-2xl animate-fade-in text-slate-900">
+            <div className="bg-slate-900 p-4 border-b border-slate-950 flex justify-between items-center text-white">
+              <span className="font-extrabold text-xs tracking-wider uppercase">
+                {isPackageEdit ? 'Chỉnh Sửa Gói Đăng Ký' : 'Thành Lập Gói Đăng Ký Mới'}
+              </span>
+              <button 
+                onClick={() => setShowPackageModal(false)}
+                className="text-slate-400 hover:text-white font-bold text-sm cursor-pointer border-none bg-transparent"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePackageSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[10.5px] font-black text-slate-500 block mb-1">ID Gói *</label>
+                  <input
+                    type="text"
+                    required
+                    disabled={isPackageEdit}
+                    value={formPkgId}
+                    onChange={(e) => setFormPkgId(e.target.value)}
+                    placeholder="pkg-custom"
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-800 disabled:bg-slate-50 disabled:text-slate-400"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-[10.5px] font-black text-slate-500 block mb-1">Tên Gói Đại Biểu *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formPkgName}
+                    onChange={(e) => setFormPkgName(e.target.value)}
+                    placeholder="ví dụ: Gói Masterclass 1"
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-850"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10.5px] font-black text-slate-500 block mb-1">Đơn giá / Phí tham gia (VNĐ) *</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    required
+                    min={0}
+                    step={1000}
+                    value={formPkgFee}
+                    onChange={(e) => setFormPkgFee(Number(e.target.value))}
+                    className="w-full pl-3 pr-10 py-1.5 border border-slate-200 rounded-lg text-xs font-mono font-extrabold"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 font-bold font-mono text-slate-400 text-[10px]">VNĐ</span>
+                </div>
+              </div>
+
+              <div className="text-left py-1 text-xs">
+                <RichTextEditor
+                  value={formPkgDesc}
+                  onChange={setFormPkgDesc}
+                  label="Mô tả tóm tắt"
+                  placeholder="Điền ghi chú dành cho các y bác sĩ hoặc đối tượng ưu đãi của gói..."
+                  id="pkg-desc"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10.5px] font-black text-slate-500 block mb-1">Đặc quyền (Các chuỗi ngăn bởi dấu phẩy ,)</label>
+                <textarea
+                  value={formPkgBenefits}
+                  onChange={(e) => setFormPkgBenefits(e.target.value)}
+                  placeholder="Nhận CME, Tài liệu bài báo, Teabreak Hội nghị..."
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-sans"
+                  rows={2}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-150">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={formPkgIncludesCme}
+                    onChange={(e) => setFormPkgIncludesCme(e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 rounded border-slate-350 cursor-pointer text-xs"
+                  />
+                  <div>
+                    <span className="font-bold text-slate-800 text-[11px] block">Cấp CME</span>
+                    <span className="text-[9px] text-slate-450 block -mt-0.5">Xác nhận có CME khoa học</span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={formPkgIncludesGala}
+                    onChange={(e) => setFormPkgIncludesGala(e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 rounded border-slate-350 cursor-pointer text-xs"
+                  />
+                  <div>
+                    <span className="font-bold text-slate-800 text-[11px] block">Gala Dinner</span>
+                    <span className="text-[9px] text-slate-450 block -mt-0.5">Bao gồm thư mời tiệc tối</span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Toggle pkg is active */}
+              <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                <span className="text-[10.5px] font-bold text-slate-700">Trạng thái phát hành</span>
+                <button
+                  type="button"
+                  onClick={() => setFormPkgIsActive(!formPkgIsActive)}
+                  className={`px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase text-center cursor-pointer border ${
+                    formPkgIsActive ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-100 border-slate-200 text-slate-500'
+                  }`}
+                >
+                  {formPkgIsActive ? 'Đang hoạt động' : 'Tạm Đóng'}
+                </button>
+              </div>
+
+              <div className="pt-3 border-t border-slate-150 flex justify-end gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setShowPackageModal(false)}
+                  className="px-4 py-2 bg-slate-100 font-bold rounded-lg cursor-pointer hover:bg-slate-200 text-slate-600 transition-all border-none"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-lg cursor-pointer transition-all border-none shadow-sm"
+                >
+                  Lưu Gói Đăng Ký
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: HUMAN OPERATOR PERMISSIONS CRUD ================= */}
+      {showUserModal && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden border border-slate-150 shadow-2xl animate-fade-in text-slate-900">
+            <div className="bg-slate-900 p-4 border-b border-slate-950 flex justify-between items-center text-white">
+              <span className="font-extrabold text-xs tracking-wider uppercase">
+                {isUserEdit ? 'Cấu Hình Quản Trị Nhân Sự' : 'Gán Thêm Thành Viên Mới'}
+              </span>
+              <button 
+                onClick={() => setShowUserModal(false)}
+                className="text-slate-400 hover:text-white font-bold text-sm cursor-pointer border-none bg-transparent"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveUserSubmit} className="p-6 space-y-4 text-xs font-sans">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[10.5px] font-black text-slate-500 block mb-1">Mã ID *</label>
+                  <input
+                    type="text"
+                    required
+                    disabled
+                    value={formUserId}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-400 bg-slate-50"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-[10.5px] font-black text-slate-500 block mb-1">Email / Nickname Đăng nhập *</label>
+                  <input
+                    type="email"
+                    required
+                    disabled={isUserEdit}
+                    value={formUserEmail}
+                    onChange={(e) => setFormUserEmail(e.target.value)}
+                    placeholder="vd: operator.chi@vsaps.org"
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-800 disabled:bg-slate-50 disabled:text-slate-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10.5px] font-black text-slate-500 block mb-1">Họ Tên Hiển Thị *</label>
+                <input
+                  type="text"
+                  required
+                  value={formUserName}
+                  onChange={(e) => setFormUserName(e.target.value)}
+                  placeholder="vd: BS.CKII Nguyễn Thế Chi"
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-900"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10.5px] font-black text-slate-500 block mb-1">Vai trò Vận hành *</label>
+                  <select
+                    value={formUserRole}
+                    onChange={(e) => setFormUserRole(e.target.value as Role)}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold bg-white"
+                  >
+                    <option value="ctv">Cộng tác viên (CTV)</option>
+                    <option value="btc">Thành viên BTC</option>
+                    <option value="admin">Trưởng ban BTC (Admin)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10.5px] font-black text-slate-500 block mb-1">Trạng thái Tài khoản *</label>
+                  <select
+                    value={formUserStatus}
+                    onChange={(e) => setFormUserStatus(e.target.value as any)}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold bg-white"
+                  >
+                    <option value="active">Đang hoạt động</option>
+                    <option value="inactive">Đình chỉ tạm thời</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Permissions checkboxes checklist */}
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">GÁN QUYỀN HẠN CHI TIẾT (GRANULAR PERMISSIONS):</span>
+                
+                <div className="grid grid-cols-1 gap-2 bg-slate-50 p-3.5 rounded-xl border border-slate-150">
+                  <label className="flex items-center gap-2.5 cursor-pointer selection-none">
+                    <input
+                      type="checkbox"
+                      checked={formUserPermissions.includes('approve_attendees')}
+                      onChange={() => handleToggleUserPermission('approve_attendees')}
+                      className="w-4 h-4 rounded text-indigo-600 outline-none cursor-pointer"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-800 text-[11px] block">Duyệt thông tin & đối soát đại biểu</span>
+                      <span className="text-[9px] text-slate-400 block -mt-0.5">Cho phép duyệt, gán QR, thay đổi trạng thái đóng tiền</span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 cursor-pointer selection-none">
+                    <input
+                      type="checkbox"
+                      checked={formUserPermissions.includes('manage_speakers')}
+                      onChange={() => handleToggleUserPermission('manage_speakers')}
+                      className="w-4 h-4 rounded text-indigo-600 outline-none cursor-pointer"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-800 text-[11px] block">Phê duyệt Báo cáo khoa học / CME</span>
+                      <span className="text-[9px] text-slate-400 block -mt-0.5">Xét duyệt tóm tắt báo cáo viên, sắp xếp phòng biểu diễn</span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 cursor-pointer selection-none">
+                    <input
+                      type="checkbox"
+                      checked={formUserPermissions.includes('finance_records')}
+                      onChange={() => handleToggleUserPermission('finance_records')}
+                      className="w-4 h-4 rounded text-indigo-600 outline-none cursor-pointer"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-800 text-[11px] block">Truy xuất báo cáo tài chính thu chi</span>
+                      <span className="text-[9px] text-slate-400 block -mt-0.5">Được quyền lọc biểu đồ tài chính, nhập chi ngân sách</span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 cursor-pointer selection-none">
+                    <input
+                      type="checkbox"
+                      checked={formUserPermissions.includes('system_settings')}
+                      onChange={() => handleToggleUserPermission('system_settings')}
+                      className="w-4 h-4 rounded text-indigo-600 outline-none cursor-pointer"
+                    />
+                    <div>
+                      <span className="font-bold text-slate-800 text-[11px] block">Cấu hình tham số hệ thống & API</span>
+                      <span className="text-[9px] text-slate-400 block -mt-0.5">Sửa đổi credentials SMTP, Token Zalo OA và xoá dữ liệu</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-150 flex justify-end gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setShowUserModal(false)}
+                  className="px-4 py-2 bg-slate-100 font-bold rounded-lg cursor-pointer hover:bg-slate-200 text-slate-600 transition-all border-none"
+                >
+                  Thoát ra
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-lg cursor-pointer transition-all border-none shadow-sm"
+                >
+                  Đồng Bộ Tài Khoản nhân sự
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: EXTRINSIC EMBED CODE DYNAMIC CRUD ================= */}
+      {showEmbedModal && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden border border-slate-150 shadow-2xl animate-fade-in text-slate-900">
+            <div className="bg-slate-900 p-4 border-b border-slate-950 flex justify-between items-center text-white">
+              <span className="font-extrabold text-xs tracking-wider uppercase">
+                {isEmbedEdit ? 'Chỉnh Sửa Mã Nhúng Database' : 'Thiết Lập Đoạn Mã Nhúng'}
+              </span>
+              <button 
+                onClick={() => setShowEmbedModal(false)}
+                className="text-slate-400 hover:text-white font-bold text-sm cursor-pointer border-none bg-transparent"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEmbedSubmit} className="p-6 space-y-4 text-xs font-sans">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[10.5px] font-black text-slate-500 block mb-1">Mã nhúng ID *</label>
+                  <input
+                    type="text"
+                    required
+                    disabled={isEmbedEdit}
+                    value={formEmbedId}
+                    onChange={(e) => setFormEmbedId(e.target.value)}
+                    placeholder="emb-ga4"
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono text-slate-800 disabled:bg-slate-50 disabled:text-slate-400"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-[10.5px] font-black text-slate-500 block mb-1">Tên nhãn mô tả mã nhúng *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formEmbedName}
+                    onChange={(e) => setFormEmbedName(e.target.value)}
+                    placeholder="vd: Iframe Form Delegate Đăng Ký chính thức"
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-850"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10.5px] font-black text-slate-500 block mb-1">Phân vị / Vị trí nhúng *</label>
+                  <select
+                    value={formEmbedTarget}
+                    onChange={(e) => setFormEmbedTarget(e.target.value as any)}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-bold bg-white"
+                  >
+                    <option value="delegate">Iframe Đăng Ký Đại Biểu (WordPress)</option>
+                    <option value="speaker">Iframe Form Báo Cáo Viên (WordPress)</option>
+                    <option value="sponsor">Iframe Form Tài Trợ (WordPress)</option>
+                    <option value="analytics">Đoạn Script Pixel / Analytics thẻ Head/Body</option>
+                    <option value="custom">Mã nhúng tùy biến quảng cáo / Chỉnh trang trí</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10.5px] font-black text-slate-500 block mb-1">Phát hiệu lập tức *</label>
+                  <select
+                    value={formEmbedIsActive ? 'true' : 'false'}
+                    onChange={(e) => setFormEmbedIsActive(e.target.value === 'true')}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-bold bg-white"
+                  >
+                    <option value="true">Bật kích hoạt và truyền dữ liệu</option>
+                    <option value="false">Tạm dừng ẩn trên web ngoài</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10.5px] font-black text-slate-500 block mb-1">Nội dung Mã nguồn (HTML / Block / Iframe / Script)*</label>
+                <textarea
+                  required
+                  value={formEmbedCode}
+                  onChange={(e) => setFormEmbedCode(e.target.value)}
+                  placeholder="vd: <iframe src='...' width='100%' height='950px' ...></iframe>"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg font-mono text-[10px] text-indigo-700 bg-slate-50"
+                  rows={6}
+                />
+              </div>
+
+              <div>
+                <label className="text-[10.5px] font-black text-slate-500 block mb-1">Mẹo / Giải nghĩa vị trí nhúng</label>
+                <input
+                  type="text"
+                  value={formEmbedNotes}
+                  onChange={(e) => setFormEmbedNotes(e.target.value)}
+                  placeholder="vd: Dán vào Widget HTML của trang chủ tin tức..."
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-sans"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-150 flex justify-end gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setShowEmbedModal(false)}
+                  className="px-4 py-2 bg-slate-100 font-bold rounded-lg cursor-pointer hover:bg-slate-200 text-slate-600 transition-all border-none"
+                >
+                  Đóng lại
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-lg cursor-pointer transition-all border-none shadow-sm"
+                >
+                  Lưu trữ Mã Nhúng DB
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
