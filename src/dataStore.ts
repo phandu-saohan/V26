@@ -425,6 +425,11 @@ export class DataStore {
           }
 
           const dbRecord = mapAttendeeToDb(updatedAttendee);
+          // Prevent foreign key violation if packages table is unseeded on live DB
+          const packageExists = this.packages.some(p => p.id === updatedAttendee.packageId);
+          if (!packageExists) {
+            dbRecord.package_id = null;
+          }
           const query = isNew 
             ? supabase.from('attendees').insert(dbRecord)
             : supabase.from('attendees').upsert(dbRecord);
@@ -502,6 +507,11 @@ export class DataStore {
         }
 
         const dbRecord = mapAttendeeToDb(updatedAttendee);
+        // Prevent foreign key violation if packages table is unseeded on live DB
+        const packageExists = this.packages.some(p => p.id === updatedAttendee.packageId);
+        if (!packageExists) {
+          dbRecord.package_id = null;
+        }
         const query = isNew 
           ? supabase.from('attendees').insert(dbRecord)
           : supabase.from('attendees').upsert(dbRecord);
@@ -583,6 +593,11 @@ export class DataStore {
           }
 
           const dbRecord = mapSpeakerToDb(updatedSpeaker);
+          // Prevent foreign key violation if sessions table does not contain referenced ID
+          const sessionExists = this.sessions.some(s => s.id === updatedSpeaker.scheduledSessionId);
+          if (!sessionExists) {
+            dbRecord.scheduled_session_id = null;
+          }
           const query = isNew
             ? supabase.from('speakers').insert(dbRecord)
             : supabase.from('speakers').upsert(dbRecord);
@@ -632,6 +647,11 @@ export class DataStore {
         }
 
         const dbRecord = mapSpeakerToDb(updatedSpeaker);
+        // Prevent foreign key violation if sessions table does not contain referenced ID
+        const sessionExists = this.sessions.some(s => s.id === updatedSpeaker.scheduledSessionId);
+        if (!sessionExists) {
+          dbRecord.scheduled_session_id = null;
+        }
         const query = isNew
           ? supabase.from('speakers').insert(dbRecord)
           : supabase.from('speakers').upsert(dbRecord);
