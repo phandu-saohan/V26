@@ -710,6 +710,17 @@ export class DataStore {
 
   // Users
   getUsers() { return this.users; }
+
+  addUserLocally(user: UserAccount) {
+    const idx = this.users.findIndex(u => u.id === user.id);
+    if (idx >= 0) {
+      this.users[idx] = user;
+    } else {
+      this.users.push(user);
+    }
+    this.saveToLocalStorage(DataStore.KEY_USERS, this.users);
+  }
+
   saveUser(user: UserAccount) {
     const idx = this.users.findIndex(u => u.id === user.id);
     if (idx >= 0) {

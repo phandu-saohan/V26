@@ -110,6 +110,8 @@ export default function SettingsPanel({ role, onChangeRole }: SettingsPanelProps
   const [formUserId, setFormUserId] = useState('');
   const [formUserEmail, setFormUserEmail] = useState('');
   const [formUserName, setFormUserName] = useState('');
+  const [formUserPassword, setFormUserPassword] = useState('');
+  const [isSavingUser, setIsSavingUser] = useState(false);
   const [formUserRole, setFormUserRole] = useState<Role>('ctv');
   const [formUserStatus, setFormUserStatus] = useState<'active' | 'inactive'>('active');
   const [formUserPermissions, setFormUserPermissions] = useState<string[]>([]);
@@ -486,6 +488,7 @@ export default function SettingsPanel({ role, onChangeRole }: SettingsPanelProps
     setFormUserId('USR-' + Math.floor(Math.random() * 900 + 100));
     setFormUserEmail('');
     setFormUserName('');
+    setFormUserPassword('');
     setFormUserRole('ctv');
     setFormUserStatus('active');
     setFormUserPermissions(['approve_attendees']);
@@ -514,18 +517,57 @@ export default function SettingsPanel({ role, onChangeRole }: SettingsPanelProps
       return;
     }
 
-    const payload: UserAccount = {
-      id: formUserId,
-      email: formUserEmail.trim().toLowerCase(),
-      name: formUserName.trim(),
-      role: formUserRole,
-      status: formUserStatus,
-      permissions: formUserPermissions
-    };
+    if (!isUserEdit) {
+      // Adding new operator: call Vercel Serverless API to register in Auth + public.user_accounts
+      if (!formUserPassword || formUserPassword.length < 6) {
+        alert('Mật khẩu bắt buộc và phải có ít nhất 6 ký tự!');
+        return;
+      }
 
-    store.saveUser(payload);
-    setShowUserModal(false);
-    reloadData();
+      setIsSavingUser(true);
+      fetch('/api/users/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formUserEmail.trim().toLowerCase(),
+          password: formUserPassword,
+          name: formUserName.trim(),
+          role: formUserRole,
+          permissions: formUserPermissions
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          alert('Tạo nhân sự mới và đồng bộ Supabase Auth thành công!');
+          // Add to local dataStore cache
+          store.addUserLocally(data.user);
+          setShowUserModal(false);
+          reloadData();
+        } else {
+          alert(`Lỗi khi tạo nhân sự: ${data.error}`);
+        }
+      })
+      .catch(err => {
+        alert(`Lỗi mạng/kết nối: ${err.message}`);
+      })
+      .finally(() => {
+        setIsSavingUser(false);
+      });
+    } else {
+      // Editing operator: standard profile update (role/status/permissions) in public.user_accounts
+      const payload: UserAccount = {
+        id: formUserId,
+        email: formUserEmail.trim().toLowerCase(),
+        name: formUserName.trim(),
+        role: formUserRole,
+        status: formUserStatus,
+        permissions: formUserPermissions
+      };
+      store.saveUser(payload);
+      setShowUserModal(false);
+      reloadData();
+    }
   };
 
   const handleDeleteOperator = (id: string) => {
@@ -2119,6 +2161,20 @@ export default function SettingsPanel({ role, onChangeRole }: SettingsPanelProps
                 />
               </div>
 
+              {!isUserEdit && (
+                <div>
+                  <label className="text-[10.5px] font-black text-slate-500 block mb-1">Mật Khẩu Ban Đầu (tối thiểu 6 ký tự) *</label>
+                  <input
+                    type="password"
+                    required
+                    value={formUserPassword}
+                    onChange={(e) => setFormUserPassword(e.target.value)}
+                    placeholder="Nhập mật khẩu cho nhân sự..."
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-900"
+                  />
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10.5px] font-black text-slate-500 block mb-1">Vai trò Vận hành *</label>
@@ -2214,9 +2270,10 @@ export default function SettingsPanel({ role, onChangeRole }: SettingsPanelProps
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-lg cursor-pointer transition-all border-none shadow-sm"
+                  disabled={isSavingUser}
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-lg cursor-pointer transition-all border-none shadow-sm disabled:opacity-55 disabled:cursor-not-allowed"
                 >
-                  Đồng Bộ Tài Khoản nhân sự
+                  {isSavingUser ? 'Đang tạo Auth & DB...' : 'Đồng Bộ Tài Khoản nhân sự'}
                 </button>
               </div>
             </form>
