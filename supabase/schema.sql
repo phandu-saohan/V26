@@ -296,3 +296,4 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.sponsors;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.internal_tasks;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.finance_transactions;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.notification_logs;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.packages;

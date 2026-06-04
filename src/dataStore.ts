@@ -352,6 +352,23 @@ export class DataStore {
         window.dispatchEvent(new CustomEvent('store-updated', { detail: { table: 'finance_transactions' } }));
       })
       .subscribe();
+
+    // Listen to packages table updates
+    supabase.channel('db-packages')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'packages' }, (payload) => {
+        const { eventType, new: newRow, old: oldRow } = payload;
+        if (eventType === 'INSERT' || eventType === 'UPDATE') {
+          const pkg = mapDbToPackage(newRow);
+          const idx = this.packages.findIndex(p => p.id === pkg.id);
+          if (idx >= 0) this.packages[idx] = pkg;
+          else this.packages.push(pkg);
+        } else if (eventType === 'DELETE') {
+          this.packages = this.packages.filter(p => p.id !== oldRow.id);
+        }
+        this.saveToLocalStorage(DataStore.KEY_PACKAGES, this.packages);
+        window.dispatchEvent(new CustomEvent('store-updated', { detail: { table: 'packages' } }));
+      })
+      .subscribe();
   }
 
   private getLocalStorage<T>(key: string, defaultValue: T): T {
@@ -1034,6 +1051,26 @@ export class DataStore {
     return pkg;
   }
 
+  async savePackageAsync(pkg: RegistrationPackage): Promise<RegistrationPackage> {
+    const idx = this.packages.findIndex(p => p.id === pkg.id);
+    if (idx >= 0) {
+      this.packages[idx] = pkg;
+    } else {
+      this.packages.push(pkg);
+    }
+    this.saveToLocalStorage(DataStore.KEY_PACKAGES, this.packages);
+
+    if (isSupabaseConfigured()) {
+      const { error } = await supabase.from('packages').upsert(mapPackageToDb(pkg));
+      if (error) {
+        console.error('Error syncing package to Supabase:', error);
+        throw new Error(error.message);
+      }
+    }
+    window.dispatchEvent(new CustomEvent('store-updated', { detail: { table: 'packages' } }));
+    return pkg;
+  }
+
   deletePackage(id: string) {
     this.packages = this.packages.filter(p => p.id !== id);
     this.saveToLocalStorage(DataStore.KEY_PACKAGES, this.packages);
@@ -1043,6 +1080,20 @@ export class DataStore {
         if (error) console.error('Error deleting package from Supabase:', error);
       });
     }
+  }
+
+  async deletePackageAsync(id: string): Promise<void> {
+    this.packages = this.packages.filter(p => p.id !== id);
+    this.saveToLocalStorage(DataStore.KEY_PACKAGES, this.packages);
+
+    if (isSupabaseConfigured()) {
+      const { error } = await supabase.from('packages').delete().eq('id', id);
+      if (error) {
+        console.error('Error deleting package from Supabase:', error);
+        throw new Error(error.message);
+      }
+    }
+    window.dispatchEvent(new CustomEvent('store-updated', { detail: { table: 'packages' } }));
   }
 
   // Users

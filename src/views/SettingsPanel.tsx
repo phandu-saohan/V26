@@ -34,7 +34,8 @@ import {
   MapPin,
   Calendar,
   AlertTriangle,
-  Printer
+  Printer,
+  Loader2
 } from 'lucide-react';
 import { store } from '../dataStore';
 import { 
@@ -79,6 +80,7 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
   const [packages, setPackages] = useState<RegistrationPackage[]>(store.getPackages());
   const [showPackageModal, setShowPackageModal] = useState(false);
   const [isPackageEdit, setIsPackageEdit] = useState(false);
+  const [isSavingPackage, setIsSavingPackage] = useState(false);
   const [formPkgId, setFormPkgId] = useState('');
   const [formPkgName, setFormPkgName] = useState('');
   const [formPkgFee, setFormPkgFee] = useState(0);
@@ -182,7 +184,7 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
     setShowPackageModal(true);
   };
 
-  const handleSavePackageSubmit = (e: React.FormEvent) => {
+  const handleSavePackageSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (role !== 'admin') return;
 
@@ -207,12 +209,21 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
       includesGala: formPkgIncludesGala
     };
 
-    store.savePackage(updatedPkg);
-    setShowPackageModal(false);
-    reloadData();
+    setIsSavingPackage(true);
+    try {
+      await store.savePackageAsync(updatedPkg);
+      setShowPackageModal(false);
+      reloadData();
+      alert('Đã lưu cấu hình gói đăng ký thành công!');
+    } catch (err: any) {
+      console.error('Lỗi khi lưu gói đăng ký:', err);
+      alert(`Không thể lưu gói đăng ký: ${err.message || err}`);
+    } finally {
+      setIsSavingPackage(false);
+    }
   };
 
-  const handleDeletePackage = (id: string) => {
+  const handleDeletePackage = async (id: string) => {
     if (role !== 'admin') {
       alert('Quyền hạn bị từ chối!');
       return;
@@ -229,8 +240,17 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
       }
     }
 
-    store.deletePackage(id);
-    reloadData();
+    setIsSavingPackage(true);
+    try {
+      await store.deletePackageAsync(id);
+      reloadData();
+      alert('Đã xóa gói đăng ký thành công!');
+    } catch (err: any) {
+      console.error('Lỗi khi xóa gói đăng ký:', err);
+      alert(`Không thể xóa gói đăng ký: ${err.message || err}`);
+    } finally {
+      setIsSavingPackage(false);
+    }
   };
 
   // --- Handlers for Printer Settings ---
@@ -1092,8 +1112,9 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
                 </div>
                 {role === 'admin' && (
                   <button
+                    disabled={isSavingPackage}
                     onClick={handleOpenAddPackage}
-                    className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer border-none"
+                    className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Plus className="w-4 h-4" />
                     Đăng ký gói mới
@@ -1165,15 +1186,17 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
                     {role === 'admin' && (
                       <div className="border-t border-slate-100 pt-3 flex justify-end gap-1 px-1">
                         <button
+                          disabled={isSavingPackage}
                           onClick={() => handleOpenEditPackage(pkg)}
-                          className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-lg cursor-pointer border-none bg-transparent flex items-center gap-1 text-[10px] font-bold"
+                          className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-lg cursor-pointer border-none bg-transparent flex items-center gap-1 text-[10px] font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                           <span>Chỉnh sửa</span>
                         </button>
                         <button
+                          disabled={isSavingPackage}
                           onClick={() => handleDeletePackage(pkg.id)}
-                          className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg cursor-pointer border-none bg-transparent flex items-center gap-1 text-[10px] font-bold"
+                          className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg cursor-pointer border-none bg-transparent flex items-center gap-1 text-[10px] font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Trash className="w-3.5 h-3.5" />
                           <span>Gỡ bỏ</span>
@@ -1986,8 +2009,9 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
                 {isPackageEdit ? 'Chỉnh Sửa Gói Đăng Ký' : 'Thành Lập Gói Đăng Ký Mới'}
               </span>
               <button 
+                disabled={isSavingPackage}
                 onClick={() => setShowPackageModal(false)}
-                className="text-slate-400 hover:text-white font-bold text-sm cursor-pointer border-none bg-transparent"
+                className="text-slate-400 hover:text-white font-bold text-sm cursor-pointer border-none bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 ✕
               </button>
@@ -2000,7 +2024,7 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
                   <input
                     type="text"
                     required
-                    disabled={isPackageEdit}
+                    disabled={isPackageEdit || isSavingPackage}
                     value={formPkgId}
                     onChange={(e) => setFormPkgId(e.target.value)}
                     placeholder="pkg-custom"
@@ -2012,10 +2036,11 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
                   <input
                     type="text"
                     required
+                    disabled={isSavingPackage}
                     value={formPkgName}
                     onChange={(e) => setFormPkgName(e.target.value)}
                     placeholder="ví dụ: Gói Masterclass 1"
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-850"
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-850 disabled:bg-slate-50 disabled:text-slate-400"
                   />
                 </div>
               </div>
@@ -2028,15 +2053,16 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
                     required
                     min={0}
                     step={1000}
+                    disabled={isSavingPackage}
                     value={formPkgFee}
                     onChange={(e) => setFormPkgFee(Number(e.target.value))}
-                    className="w-full pl-3 pr-10 py-1.5 border border-slate-200 rounded-lg text-xs font-mono font-extrabold"
+                    className="w-full pl-3 pr-10 py-1.5 border border-slate-200 rounded-lg text-xs font-mono font-extrabold disabled:bg-slate-50 disabled:text-slate-400"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 font-bold font-mono text-slate-400 text-[10px]">VNĐ</span>
                 </div>
               </div>
 
-              <div className="text-left py-1 text-xs">
+              <div className={`text-left py-1 text-xs ${isSavingPackage ? 'pointer-events-none opacity-60' : ''}`}>
                 <RichTextEditor
                   value={formPkgDesc}
                   onChange={setFormPkgDesc}
@@ -2050,9 +2076,10 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
                 <label className="text-[10.5px] font-black text-slate-500 block mb-1">Đặc quyền (Các chuỗi ngăn bởi dấu phẩy ,)</label>
                 <textarea
                   value={formPkgBenefits}
+                  disabled={isSavingPackage}
                   onChange={(e) => setFormPkgBenefits(e.target.value)}
                   placeholder="Nhận CME, Tài liệu bài báo, Teabreak Hội nghị..."
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-sans"
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-sans disabled:bg-slate-50 disabled:text-slate-400"
                   rows={2}
                 />
               </div>
@@ -2062,8 +2089,9 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
                   <input
                     type="checkbox"
                     checked={formPkgIncludesCme}
+                    disabled={isSavingPackage}
                     onChange={(e) => setFormPkgIncludesCme(e.target.checked)}
-                    className="w-4 h-4 text-indigo-600 rounded border-slate-350 cursor-pointer text-xs"
+                    className="w-4 h-4 text-indigo-600 rounded border-slate-350 cursor-pointer text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <div>
                     <span className="font-bold text-slate-800 text-[11px] block">Cấp CME</span>
@@ -2075,8 +2103,9 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
                   <input
                     type="checkbox"
                     checked={formPkgIncludesGala}
+                    disabled={isSavingPackage}
                     onChange={(e) => setFormPkgIncludesGala(e.target.checked)}
-                    className="w-4 h-4 text-indigo-600 rounded border-slate-350 cursor-pointer text-xs"
+                    className="w-4 h-4 text-indigo-600 rounded border-slate-350 cursor-pointer text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <div>
                     <span className="font-bold text-slate-800 text-[11px] block">Gala Dinner</span>
@@ -2090,8 +2119,9 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
                 <span className="text-[10.5px] font-bold text-slate-700">Trạng thái phát hành</span>
                 <button
                   type="button"
+                  disabled={isSavingPackage}
                   onClick={() => setFormPkgIsActive(!formPkgIsActive)}
-                  className={`px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase text-center cursor-pointer border ${
+                  className={`px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase text-center cursor-pointer border disabled:opacity-50 disabled:cursor-not-allowed ${
                     formPkgIsActive ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-100 border-slate-200 text-slate-500'
                   }`}
                 >
@@ -2102,15 +2132,18 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
               <div className="pt-3 border-t border-slate-150 flex justify-end gap-2 text-xs">
                 <button
                   type="button"
+                  disabled={isSavingPackage}
                   onClick={() => setShowPackageModal(false)}
-                  className="px-4 py-2 bg-slate-100 font-bold rounded-lg cursor-pointer hover:bg-slate-200 text-slate-600 transition-all border-none"
+                  className="px-4 py-2 bg-slate-100 font-bold rounded-lg cursor-pointer hover:bg-slate-200 text-slate-600 transition-all border-none disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Hủy bỏ
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-lg cursor-pointer transition-all border-none shadow-sm"
+                  disabled={isSavingPackage}
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-lg cursor-pointer transition-all border-none shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                 >
+                  {isSavingPackage && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Lưu Gói Đăng Ký
                 </button>
               </div>
