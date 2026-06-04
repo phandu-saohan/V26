@@ -259,9 +259,10 @@ CREATE POLICY "Allow public read business_config" ON public.business_config FOR 
 CREATE POLICY "Allow public read sessions" ON public.sessions FOR SELECT USING (true);
 CREATE POLICY "Allow public read sponsors" ON public.sponsors FOR SELECT USING (true);
 
--- 2. Registration Policies (allow public insert for delegates & speakers registration forms)
+-- 2. Registration Policies (allow public insert for delegates, speakers & sponsors registration forms)
 CREATE POLICY "Allow public insert attendees" ON public.attendees FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public insert speakers" ON public.speakers FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public insert sponsors" ON public.sponsors FOR INSERT WITH CHECK (true);
 
 -- 3. Authenticated Users (BTC, Admin, CTV) Policies
 -- For simplicity in prototypes, we allow authenticated users (logged-in accounts) full access

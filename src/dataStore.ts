@@ -378,7 +378,8 @@ export class DataStore {
   getAttendees() { return this.attendees; }
   saveAttendee(attendee: Attendee) {
     const idx = this.attendees.findIndex(a => a.id === attendee.id);
-    if (idx >= 0) {
+    const isNew = idx < 0;
+    if (!isNew) {
       this.attendees[idx] = attendee;
     } else {
       this.attendees.push(attendee);
@@ -387,8 +388,13 @@ export class DataStore {
 
     // Sync to Supabase in the background
     if (isSupabaseConfigured()) {
-      supabase.from('attendees').upsert(mapAttendeeToDb(attendee)).then(({ error }) => {
-        if (error) console.error('Error syncing attendee to Supabase:', error);
+      const dbRecord = mapAttendeeToDb(attendee);
+      const query = isNew 
+        ? supabase.from('attendees').insert(dbRecord)
+        : supabase.from('attendees').upsert(dbRecord);
+        
+      query.then(({ error }) => {
+        if (error) console.error(`Error ${isNew ? 'inserting' : 'upserting'} attendee to Supabase:`, error);
       });
     }
     
@@ -425,7 +431,8 @@ export class DataStore {
   getSpeakers() { return this.speakers; }
   saveSpeaker(speaker: SpeakerRegistration) {
     const idx = this.speakers.findIndex(s => s.id === speaker.id);
-    if (idx >= 0) {
+    const isNew = idx < 0;
+    if (!isNew) {
       this.speakers[idx] = speaker;
     } else {
       this.speakers.push(speaker);
@@ -433,8 +440,13 @@ export class DataStore {
     this.saveToLocalStorage(DataStore.KEY_SPEAKERS, this.speakers);
 
     if (isSupabaseConfigured()) {
-      supabase.from('speakers').upsert(mapSpeakerToDb(speaker)).then(({ error }) => {
-        if (error) console.error('Error syncing speaker to Supabase:', error);
+      const dbRecord = mapSpeakerToDb(speaker);
+      const query = isNew
+        ? supabase.from('speakers').insert(dbRecord)
+        : supabase.from('speakers').upsert(dbRecord);
+
+      query.then(({ error }) => {
+        if (error) console.error(`Error ${isNew ? 'inserting' : 'upserting'} speaker to Supabase:`, error);
       });
     }
     return speaker;
@@ -528,7 +540,8 @@ export class DataStore {
   getSponsors() { return this.sponsors; }
   saveSponsor(sponsor: Sponsor) {
     const idx = this.sponsors.findIndex(s => s.id === sponsor.id);
-    if (idx >= 0) {
+    const isNew = idx < 0;
+    if (!isNew) {
       this.sponsors[idx] = sponsor;
     } else {
       this.sponsors.push(sponsor);
@@ -536,8 +549,13 @@ export class DataStore {
     this.saveToLocalStorage(DataStore.KEY_SPONSORS, this.sponsors);
 
     if (isSupabaseConfigured()) {
-      supabase.from('sponsors').upsert(mapSponsorToDb(sponsor)).then(({ error }) => {
-        if (error) console.error('Error syncing sponsor to Supabase:', error);
+      const dbRecord = mapSponsorToDb(sponsor);
+      const query = isNew
+        ? supabase.from('sponsors').insert(dbRecord)
+        : supabase.from('sponsors').upsert(dbRecord);
+
+      query.then(({ error }) => {
+        if (error) console.error(`Error ${isNew ? 'inserting' : 'upserting'} sponsor to Supabase:`, error);
       });
     }
 

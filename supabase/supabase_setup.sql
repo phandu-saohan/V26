@@ -280,6 +280,7 @@ CREATE POLICY "Allow public read sponsors" ON public.sponsors FOR SELECT USING (
 -- Allow anonymous registration insertions
 CREATE POLICY "Allow public insert attendees" ON public.attendees FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public insert speakers" ON public.speakers FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public insert sponsors" ON public.sponsors FOR INSERT WITH CHECK (true);
 
 -- Authenticated roles management policies (BTC, CTV, Admin)
 CREATE POLICY "Allow authenticated read user_accounts" ON public.user_accounts FOR SELECT USING (auth.role() = 'authenticated');
