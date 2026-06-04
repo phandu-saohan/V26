@@ -3096,7 +3096,7 @@ Ban Thư ký Hội nghị VSAPS 2026`
 
       {/* Name-Badge Print Modal (Dynamic Format Design based on settings) */}
       {selectedBadgeAttendee && (() => {
-        const printerPaperSize = localStorage.getItem('vsaps_printer_papersize') || '100x150';
+        const printerPaperSize = localStorage.getItem('vsaps_printer_papersize') || '80x50';
         const printerMargin = localStorage.getItem('vsaps_printer_margin') || 'none';
         
         let badgeWidth = '8cm';
@@ -3117,6 +3117,15 @@ Ban Thư ký Hội nghị VSAPS 2026`
           labelFontSize = '10px';
           idFontSize = '12px';
           qrSize = '64px';
+        } else if (printerPaperSize === '80x50') {
+          badgeWidth = '8cm';
+          badgeHeight = '5cm';
+          nameFontSize = '17px';
+          orgFontSize = '9.5px';
+          groupFontSize = '9.5px';
+          labelFontSize = '6.5px';
+          idFontSize = '7.5px';
+          qrSize = '28px';
         } else if (printerPaperSize === '70x50') {
           badgeWidth = '7cm';
           badgeHeight = '5cm';

@@ -215,6 +215,8 @@ export interface BusinessConfig {
   pwaLogoUrl?: string;
   pwaThemeColor?: string;
   pwaBackgroundColor?: string;
+  /** URL domain production của app (dùng để tạo mã nhúng WordPress) */
+  appUrl?: string;
 }
 
 export interface EmbedScript {

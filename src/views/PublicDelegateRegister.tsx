@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, CheckCircle, QrCode, Mail, Phone, FileText, Upload, AlertCircle, Sparkles, Check, HelpCircle } from 'lucide-react';
 import { store } from '../dataStore';
 import { sendRealtimeNotification } from '../lib/realtime';
@@ -17,6 +17,21 @@ interface PublicDelegateRegisterProps {
 
 export default function PublicDelegateRegister({ onNavigate }: PublicDelegateRegisterProps) {
   const packages = store.getPackages().filter(p => p.isActive);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-height postMessage for iframe embedding in WordPress
+  useEffect(() => {
+    const sendHeight = () => {
+      const h = document.documentElement.scrollHeight || document.body.scrollHeight;
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'vsaps-height', height: h }, '*');
+      }
+    };
+    sendHeight();
+    const observer = new ResizeObserver(sendHeight);
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
   
   // Custom Form State
   const [title, setTitle] = useState('BS.');
@@ -432,7 +447,7 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
   }
 
   return (
-    <div className="bg-slate-100 min-h-screen py-8 md:py-12 px-4 text-slate-800 font-sans">
+    <div ref={containerRef} className="bg-slate-100 min-h-screen py-8 md:py-12 px-4 text-slate-800 font-sans">
       <div className="max-w-4xl mx-auto">
         
         {/* Navigation block */}

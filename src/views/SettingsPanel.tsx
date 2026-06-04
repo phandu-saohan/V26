@@ -64,7 +64,7 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
     return localStorage.getItem('vsaps_printer_autoprint') === 'true';
   });
   const [printerPaperSize, setPrinterPaperSize] = useState(() => {
-    return localStorage.getItem('vsaps_printer_papersize') || '100x150';
+    return localStorage.getItem('vsaps_printer_papersize') || '80x50';
   });
   const [printerMargin, setPrinterMargin] = useState(() => {
     return localStorage.getItem('vsaps_printer_margin') || 'none';
@@ -686,12 +686,14 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
 
   // Helper resolvers for dynamic iframe string code copy paste helper
   const getEmbedFormUrl = (formType: 'delegate' | 'speaker' | 'sponsor') => {
-    const origin = window.location.origin;
-    const path = window.location.pathname;
+    // Ưu tiên dùng App URL đã cấu hình trong Cài đặt -> Thông tin sự kiện
+    // (để đảm bảo mã nhúng WP luôn trỏ đúng domain production, không dùng localhost)
+    const configuredUrl = businessConfig.appUrl?.trim().replace(/\/$/, '');
+    const origin = configuredUrl || window.location.origin;
     let viewName = 'register-delegate';
     if (formType === 'speaker') viewName = 'register-speaker';
     if (formType === 'sponsor') viewName = 'register-sponsor';
-    return `${origin}${path}?view=${viewName}`;
+    return `${origin}/?view=${viewName}`;
   };
 
   return (
@@ -886,11 +888,57 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
                   </div>
                 </div>
 
+                {/* App URL for embed generation */}
+                <div className="border border-indigo-200 bg-indigo-50 rounded-xl p-4 mt-4">
+                  <div className="flex items-start gap-2 mb-3">
+                    <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-white text-[9px] font-black">🔗</span>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-black text-indigo-800 uppercase tracking-wide">URL Domain Production (Bắt buộc cho mã nhúng WP)</p>
+                      <p className="text-[10px] text-indigo-600 mt-0.5 leading-relaxed">
+                        Nhập URL chính thức của hệ thống đã deploy (Vercel / Netlify / hosting). 
+                        Mã nhúng iframe cho WordPress sẽ dùng URL này thay vì localhost.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="url"
+                      value={businessConfig.appUrl || ''}
+                      onChange={(e) => setBusinessConfig({ ...businessConfig, appUrl: e.target.value })}
+                      placeholder="Ví dụ: https://vsaps2026.com hoặc https://ten-project.vercel.app"
+                      className="flex-1 px-3.5 py-2 text-xs border border-indigo-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-mono font-bold text-slate-800 bg-white"
+                    />
+                    {businessConfig.appUrl && (
+                      <a
+                        href={businessConfig.appUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-indigo-600 hover:text-indigo-800 text-[10px] font-black border border-indigo-300 px-3 py-2 rounded-xl bg-white whitespace-nowrap"
+                      >
+                        Mở ↗
+                      </a>
+                    )}
+                  </div>
+                  {!businessConfig.appUrl && (
+                    <p className="text-[9.5px] text-amber-600 font-bold mt-2 flex items-center gap-1">
+                      ⚠️ Chưa cấu hình — mã nhúng WP sẽ dùng URL hiện tại ({window.location.origin})
+                    </p>
+                  )}
+                  {businessConfig.appUrl && (
+                    <p className="text-[9.5px] text-emerald-600 font-bold mt-2 flex items-center gap-1">
+                      ✅ Mã nhúng WordPress sẽ dùng: {businessConfig.appUrl}
+                    </p>
+                  )}
+                </div>
+
                 <div className="border-t border-slate-100 pt-4 mt-4 space-y-4">
                   <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest block flex items-center gap-1.5">
                     <Smartphone className="w-4 h-4 text-indigo-650 animate-pulse" />
                     Cấu hình ứng dụng di động PWA (Tải App / Chế độ ngoại tuyến)
                   </span>
+
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
@@ -1806,8 +1854,28 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
                     <span className="font-mono font-bold text-slate-300">Iframe Responsive Gutenberg/Elementor Block Code</span>
                     <button
                       onClick={() => {
-                        const finalCode = `<div id="vsaps-frame-root-${selectedEmbedForm}" style="width: 100%; overflow: hidden; position: relative;">
-  <iframe id="vsaps-embed-frame" src="${getEmbedFormUrl(selectedEmbedForm)}" width="100%" height="${iframeHeight}px" style="border: none; width: 100%; display: block; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06);" scrolling="yes" loading="lazy" sandbox="allow-top-navigation allow-scripts allow-forms allow-same-origin allow-popups"></iframe>
+                        const finalCode = `<!-- VSAPS Embed Form: ${selectedEmbedForm} -->
+<div id="vsaps-frame-root-${selectedEmbedForm}" style="width:100%;overflow:hidden;position:relative;">
+  <iframe
+    id="vsaps-embed-frame-${selectedEmbedForm}"
+    src="${getEmbedFormUrl(selectedEmbedForm)}"
+    width="100%"
+    height="${iframeHeight}px"
+    style="border:none;width:100%;display:block;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.06);"
+    loading="lazy"
+    allow="clipboard-write"
+    sandbox="allow-top-navigation allow-scripts allow-forms allow-same-origin allow-popups allow-modals"
+  ></iframe>
+  <script>
+    (function(){
+      var frame=document.getElementById('vsaps-embed-frame-${selectedEmbedForm}');
+      window.addEventListener('message',function(e){
+        if(e.data&&e.data.type==='vsaps-height'&&typeof e.data.height==='number'){
+          frame.style.height=e.data.height+'px';
+        }
+      });
+    })();
+  <\/script>
 </div>`;
                         navigator.clipboard.writeText(finalCode);
                         setCopiedCodeSection('quickger');
@@ -1818,18 +1886,18 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
                       {copiedCodeSection === 'quickger' ? 'Đã sao chép!' : 'COPY CODE'}
                     </button>
                   </div>
-                  <pre className="bg-slate-950/40 p-4 border border-slate-900 rounded-b-lg font-mono text-[8.5px] text-emerald-400 h-28 overflow-y-auto leading-relaxed select-all">
-                    {`<div id="vsaps-frame-root-${selectedEmbedForm}" style="width: 100%; overflow: hidden; position: relative;">
-  <iframe 
-    id="vsaps-embed-frame-${selectedEmbedForm}" 
-    src="${getEmbedFormUrl(selectedEmbedForm)}" 
-    width="100%" 
-    height="${iframeHeight}px" 
-    style="border: none; width: 100%; display: block; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06);" 
-    scrolling="yes" 
-    loading="lazy" 
-    sandbox="allow-top-navigation allow-scripts allow-forms allow-same-origin allow-popups"
+                  <pre className="bg-slate-950/40 p-4 border border-slate-900 rounded-b-lg font-mono text-[8.5px] text-emerald-400 h-36 overflow-y-auto leading-relaxed select-all">
+{`<!-- VSAPS Embed Form: ${selectedEmbedForm} -->
+<div id="vsaps-frame-root-${selectedEmbedForm}" style="width:100%;overflow:hidden;position:relative;">
+  <iframe
+    id="vsaps-embed-frame-${selectedEmbedForm}"
+    src="${getEmbedFormUrl(selectedEmbedForm)}"
+    width="100%" height="${iframeHeight}px"
+    style="border:none;width:100%;display:block;border-radius:12px;"
+    loading="lazy" allow="clipboard-write"
+    sandbox="allow-top-navigation allow-scripts allow-forms allow-same-origin allow-popups allow-modals"
   ></iframe>
+  <script>(function(){var f=document.getElementById('vsaps-embed-frame-${selectedEmbedForm}');window.addEventListener('message',function(e){if(e.data&&e.data.type==='vsaps-height')f.style.height=e.data.height+'px';});})()</script>
 </div>`}
                   </pre>
                 </div>
