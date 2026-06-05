@@ -43,6 +43,7 @@ import {
   RegistrationPackage, 
   ZaloConfig, 
   EmailConfig, 
+  WhatsappConfig,
   SupabaseConfig, 
   Role, 
   NotificationTemplate,
@@ -94,6 +95,7 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
   // Credentials integration state
   const [zaloConfig, setZaloConfig] = useState<ZaloConfig>(store.getZaloConfig());
   const [emailConfig, setEmailConfig] = useState<EmailConfig>(store.getEmailConfig());
+  const [whatsappConfig, setWhatsappConfig] = useState<WhatsappConfig>(store.getWhatsappConfig());
   const [supabaseConfig, setSupabaseConfig] = useState<SupabaseConfig>(store.getSupabaseConfig());
   const [copiedSchema, setCopiedSchema] = useState(false);
 
@@ -104,6 +106,8 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
   const [smtpTestResult, setSmtpTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [emailSendingTest, setEmailSendingTest] = useState(false);
   const [emailSendingResult, setEmailSendingResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [waTesting, setWaTesting] = useState(false);
+  const [waTestResult, setWaTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // Operators/Users management states
   const [users, setUsers] = useState<UserAccount[]>(store.getUsers());
@@ -540,6 +544,97 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
       });
     } finally {
       setEmailSendingTest(false);
+    }
+  };
+
+  const handleSaveWhatsappSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    store.saveWhatsappConfig(whatsappConfig);
+    alert('Đã lưu cấu hình Cổng WhatsApp Business API thành công!');
+  };
+
+  const handleVerifyWhatsappToken = async () => {
+    if (!whatsappConfig.accessToken || !whatsappConfig.phoneNumberId) {
+      alert('Vui lòng nhập Access Token và Phone Number ID trước khi kiểm tra!');
+      return;
+    }
+    setWaTesting(true);
+    setWaTestResult(null);
+    try {
+      const response = await fetch(`https://graph.facebook.com/v18.0/${whatsappConfig.phoneNumberId}`, {
+        headers: {
+          'Authorization': `Bearer ${whatsappConfig.accessToken}`
+        }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setWaTestResult({
+          success: true,
+          message: `Xác thực thành công! ID Số điện thoại: ${data.id}, Tên hiển thị: ${data.display_phone_number || 'N/A'}`
+        });
+      } else {
+        setWaTestResult({
+          success: false,
+          message: `Meta Graph API báo lỗi: ${data.error?.message || 'Không rõ nguyên nhân'}`
+        });
+      }
+    } catch (err: any) {
+      setWaTestResult({
+        success: false,
+        message: `Lỗi kết nối Meta Graph API: ${err.message}`
+      });
+    } finally {
+      setWaTesting(false);
+    }
+  };
+
+  const handleSendTestWhatsappMessage = async () => {
+    if (!whatsappConfig.testPhone) {
+      alert('Vui lòng điền số điện thoại nhận test trước!');
+      return;
+    }
+    setWaTesting(true);
+    setWaTestResult(null);
+    try {
+      const testAttendee = {
+        id: 'ATT-TEST',
+        title: 'BS.',
+        fullName: 'Đại Biểu Thử Nghiệm',
+        organization: 'Bệnh viện Da liễu',
+        department: 'Thẩm mỹ Da',
+        phone: whatsappConfig.testPhone,
+        email: 'test@example.com',
+        address: 'Hà Nội',
+        nationality: 'vietname' as const,
+        packageId: 'pkg-member',
+        packageName: 'Thành viên VSAPS',
+        packageFee: 2500000,
+        paymentStatus: 'paid' as const,
+        paymentMethod: 'bank_transfer' as const,
+        registrationDate: new Date().toISOString().split('T')[0],
+        qrCodeValue: 'TEST-QR-VALUE',
+        isCheckedIn: false,
+      };
+
+      const resLog = await store.sendWhatsapp(testAttendee);
+      if (resLog.status === 'success') {
+        setWaTestResult({
+          success: true,
+          message: `Tin nhắn WhatsApp test đã bắn thành công tới ${whatsappConfig.testPhone}! Hãy kiểm tra thiết bị của bạn.`
+        });
+      } else {
+        setWaTestResult({
+          success: false,
+          message: `WhatsApp API báo lỗi: ${resLog.response?.message || resLog.response?.error?.message || 'Lỗi gửi tin'}`
+        });
+      }
+    } catch (err: any) {
+      setWaTestResult({
+        success: false,
+        message: `Lỗi kết nối API: ${err.message}`
+      });
+    } finally {
+      setWaTesting(false);
     }
   };
 
@@ -1348,7 +1443,7 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
               </div>
 
               {/* Left & Right layout: columns for form config and verification test tools */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 {/* 1. Zalo OA Connection settings card */}
                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
@@ -1579,6 +1674,86 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
                       }`}>
                         <span className="font-extrabold block mb-0.5">SMTP Transmission:</span>
                         <p>{emailSendingResult.message}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. WhatsApp Business API settings card */}
+                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                  <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest block border-b border-slate-200 pb-1.5">
+                    🟢 WHATSAPP BUSINESS CLOUD API
+                  </span>
+                  <form onSubmit={handleSaveWhatsappSubmit} className="space-y-3.5">
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 block mb-1">ACCESS TOKEN (SYSTEM USER TEMPORARY/PERMANENT)</label>
+                      <textarea
+                        value={whatsappConfig.accessToken}
+                        onChange={(e) => setWhatsappConfig({ ...whatsappConfig, accessToken: e.target.value })}
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono"
+                        rows={2}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 block mb-1">PHONE NUMBER ID</label>
+                      <input
+                        type="text"
+                        value={whatsappConfig.phoneNumberId}
+                        onChange={(e) => setWhatsappConfig({ ...whatsappConfig, phoneNumberId: e.target.value })}
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 block mb-1">WHATSAPP BUSINESS ACCOUNT ID</label>
+                      <input
+                        type="text"
+                        value={whatsappConfig.businessAccountId}
+                        onChange={(e) => setWhatsappConfig({ ...whatsappConfig, businessAccountId: e.target.value })}
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono"
+                      />
+                    </div>
+                    <button type="submit" className="w-full py-2 bg-slate-800 hover:bg-slate-900 border-none text-white text-[10px] font-black uppercase tracking-wider rounded-lg cursor-pointer">
+                      Đồng Bộ cấu hình WhatsApp API
+                    </button>
+                  </form>
+
+                  <div className="border-t border-slate-250 pt-3 space-y-2 mt-4">
+                    <span className="text-[9px] font-black text-indigo-700 block">⚡ CHẠY TEST TRUYỀN PHÁT WHATSAPP CO-GATEWAY:</span>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={handleVerifyWhatsappToken}
+                        disabled={waTesting}
+                        className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-750 rounded-lg cursor-pointer text-[10px] font-bold"
+                      >
+                        {waTesting ? 'Đang xác thực...' : '1. Kiểm tra Token'}
+                      </button>
+                      <div className="flex-1 flex gap-1.5">
+                        <input
+                          type="text"
+                          placeholder="Số ĐT nhận test (84...)"
+                          value={whatsappConfig.testPhone}
+                          onChange={(e) => setWhatsappConfig({ ...whatsappConfig, testPhone: e.target.value })}
+                          className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-mono flex-1 min-w-[100px]"
+                        />
+                        <button
+                          onClick={handleSendTestWhatsappMessage}
+                          disabled={waTesting}
+                          className="px-2.5 py-1.5 bg-blue-50 text-blue-750 border border-blue-200 hover:bg-blue-100 rounded-lg text-[10px] font-bold cursor-pointer whitespace-nowrap"
+                        >
+                          2. Gửi test Template
+                        </button>
+                      </div>
+                    </div>
+
+                    {waTestResult && (
+                      <div className={`p-3 rounded-lg border text-[10px] font-mono leading-normal mt-2 ${
+                        waTestResult.success ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
+                      }`}>
+                        <div className="font-extrabold flex items-center gap-1.5 mb-0.5">
+                          <span className={`w-1.5 h-1.5 rounded-full ${waTestResult.success ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                          <span>WhatsApp Verification Gate:</span>
+                        </div>
+                        <p>{waTestResult.message}</p>
                       </div>
                     )}
                   </div>

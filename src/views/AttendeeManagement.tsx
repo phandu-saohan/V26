@@ -121,6 +121,7 @@ export default function AttendeeManagement({ role }: AttendeeManagementProps) {
   // States for sending ZNS in bulk
   const [selectedAttendeeIds, setSelectedAttendeeIds] = useState<string[]>([]);
   const [showBulkZnsModal, setShowBulkZnsModal] = useState(false);
+  const [bulkChannel, setBulkChannel] = useState<'zalo' | 'whatsapp'>('zalo');
   const [bulkZnsTemplateId, setBulkZnsTemplateId] = useState<string>('');
   const [bulkSendingStatus, setBulkSendingStatus] = useState<'idle' | 'sending' | 'completed'>('idle');
   const [bulkSendResults, setBulkSendResults] = useState<Array<{ name: string; phone: string; status: 'success' | 'failed'; detail?: string }>>([]);
@@ -128,7 +129,7 @@ export default function AttendeeManagement({ role }: AttendeeManagementProps) {
 
   const handleStartBulkZns = async () => {
     if (!bulkZnsTemplateId) {
-      alert('Vui lòng chọn mẫu tin nhắn ZNS để tiến hành gửi hàng loạt.');
+      alert(`Vui lòng chọn mẫu tin nhắn ${bulkChannel === 'zalo' ? 'Zalo ZNS' : 'WhatsApp'} để tiến hành gửi hàng loạt.`);
       return;
     }
     
@@ -142,7 +143,9 @@ export default function AttendeeManagement({ role }: AttendeeManagementProps) {
     for (let i = 0; i < selectedAttendees.length; i++) {
       const att = selectedAttendees[i];
       try {
-        const log = await store.sendZaloZNS(att, bulkZnsTemplateId);
+        const log = bulkChannel === 'zalo' 
+          ? await store.sendZaloZNS(att, bulkZnsTemplateId)
+          : await store.sendWhatsapp(att, bulkZnsTemplateId);
         results.push({
           name: `${att.title} ${att.fullName}`,
           phone: att.phone,
@@ -1551,9 +1554,9 @@ Ban Thư ký Hội nghị VSAPS 2026`
             <div className="bg-teal-605 text-white bg-teal-600 font-extrabold rounded-full px-2.5 py-1 text-xs animate-pulse">
               Đã chọn {selectedAttendeeIds.length} đại biểu
             </div>
-            <div>
-              <p className="text-[12px] font-black text-slate-800">Thao tác gửi Zalo ZNS hàng loạt</p>
-              <p className="text-[10px] text-slate-500 font-medium">Chọn các mẫu thông báo đã phê duyệt để triển khai gửi đồng loạt tức thời</p>
+            <div className="text-left">
+              <p className="text-[12px] font-black text-slate-800">Thao tác gửi tin hàng loạt</p>
+              <p className="text-[10px] text-slate-500 font-medium font-sans">Chọn kênh (Zalo ZNS / WhatsApp) và mẫu tin để gửi tin nhắn hàng loạt cho các đại biểu đã chọn.</p>
             </div>
           </div>
 
@@ -1561,12 +1564,16 @@ Ban Thư ký Hội nghị VSAPS 2026`
             <button
               type="button"
               onClick={() => {
+                // Initialize default state to Zalo OA and select the first available Zalo template
+                setBulkChannel('zalo');
                 const zaloTemplates = store.getTemplates().filter(t => t.channel === 'zalo');
                 const approvedZns = zaloTemplates.find(t => t.status === 'approved');
                 if (approvedZns) {
                   setBulkZnsTemplateId(approvedZns.id);
                 } else if (zaloTemplates.length > 0) {
                   setBulkZnsTemplateId(zaloTemplates[0].id);
+                } else {
+                  setBulkZnsTemplateId('');
                 }
                 setBulkSendingStatus('idle');
                 setBulkSendResults([]);
@@ -1576,7 +1583,7 @@ Ban Thư ký Hội nghị VSAPS 2026`
               className="px-4 py-2 text-xs bg-teal-600 hover:bg-teal-700 text-white font-black rounded-lg flex items-center gap-1.5 transition-all shadow-sm cursor-pointer border-none"
             >
               <Sparkles className="w-4 h-4 text-teal-100" />
-              Gửi ZNS Hàng Loạt 🚀
+              Gửi Tin Hàng Loạt 🚀
             </button>
             <button
               type="button"
@@ -3858,13 +3865,19 @@ Ban Thư ký Hội nghị VSAPS 2026`
           <div className="bg-white rounded-2xl w-full max-w-2xl border border-slate-200 overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-scale-up">
             
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white p-5 flex justify-between items-center shrink-0">
+            <div className={`text-white p-5 flex justify-between items-center shrink-0 transition-all duration-300 ${
+              bulkChannel === 'zalo' 
+                ? 'bg-gradient-to-r from-teal-600 to-emerald-600' 
+                : 'bg-gradient-to-r from-emerald-600 to-green-600'
+            }`}>
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-teal-100">
                   <Database className="w-4 h-4 text-emerald-250 fill-current" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black uppercase tracking-wider text-left">Hệ Thống Gửi Zalo ZNS Hàng Loạt</h3>
+                  <h3 className="text-sm font-black uppercase tracking-wider text-left">
+                    Hệ Thống Gửi Tin Hàng Loạt (${bulkChannel === 'zalo' ? 'Zalo ZNS' : 'WhatsApp'})
+                  </h3>
                   <p className="text-[10px] text-teal-100/80 text-left">Cổng truyền tin sandbox Open API v2.6.2</p>
                 </div>
               </div>
@@ -3884,65 +3897,117 @@ Ban Thư ký Hội nghị VSAPS 2026`
             {/* Modal Body */}
             <div className="p-6 space-y-5 overflow-y-auto">
               
-              {/* Step 1: Select Template */}
-              <div className="space-y-2 text-left">
-                <label className="text-[11px] uppercase font-black tracking-wider text-slate-500 block">
-                  1. Chọn Mẫu ZNS Chuyên Biệt (Zalo Cloud Status)
-                </label>
-                <select
-                  value={bulkZnsTemplateId}
-                  disabled={bulkSendingStatus === 'sending'}
-                  onChange={(e) => setBulkZnsTemplateId(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 hover:bg-slate-100/50 border border-slate-250 focus:border-teal-500 rounded-xl text-xs font-semibold focus:outline-none transition-all disabled:opacity-50"
-                >
-                  <option value="">-- Chọn Mẫu Zalo ZNS --</option>
-                  {store.getTemplates()
-                    .filter(t => t.channel === 'zalo')
-                    .map(t => (
-                      <option key={t.id} value={t.id}>
-                        {t.name} (ZNS Code: {t.znsTemplateId || t.id}) - [{t.status === 'approved' ? 'DUYỆT CHÍNH THỨC' : t.status === 'rejected' ? 'BỊ TỪ CHỐI' : 'CHỜ DUYỆT'}]
-                      </option>
-                    ))
-                  }
-                </select>
+              {/* Step 1: Chọn Kênh Gửi & Mẫu Tin */}
+              <div className="space-y-4 text-left">
+                <div>
+                  <label className="text-[11px] uppercase font-black tracking-wider text-slate-500 block mb-2">
+                    1. Chọn Kênh Gửi Tin Nhắn Hàng Loạt
+                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      type="button"
+                      disabled={bulkSendingStatus === 'sending'}
+                      onClick={() => {
+                        setBulkChannel('zalo');
+                        const zaloTemplates = store.getTemplates().filter(t => t.channel === 'zalo');
+                        const approvedZns = zaloTemplates.find(t => t.status === 'approved');
+                        setBulkZnsTemplateId(approvedZns ? approvedZns.id : (zaloTemplates[0]?.id || ''));
+                      }}
+                      className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${
+                        bulkChannel === 'zalo'
+                          ? 'border-teal-500 bg-teal-50 text-teal-700 shadow-sm'
+                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <svg className="w-8 h-8 fill-current text-blue-600" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12c0 2.22.73 4.27 1.96 5.93L2.24 22l4.24-1.63C8.04 21.23 9.94 21.6 12 21.6c5.52 0 10-4.48 10-9.6S17.52 2 12 2zm9 9h6v1.5l-3.5 4.5h3.5v1.5h-6v-1.5l3.5-4.5h-3.5V9z" />
+                      </svg>
+                      <span className="text-xs font-black">Zalo ZNS</span>
+                      <span className="text-[10px] text-slate-400">Gửi qua Zalo OA Cloud</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={bulkSendingStatus === 'sending'}
+                      onClick={() => {
+                        setBulkChannel('whatsapp');
+                        const waTemplates = store.getTemplates().filter(t => t.channel === 'whatsapp');
+                        const approvedWa = waTemplates.find(t => t.status === 'approved');
+                        setBulkZnsTemplateId(approvedWa ? approvedWa.id : (waTemplates[0]?.id || ''));
+                      }}
+                      className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${
+                        bulkChannel === 'whatsapp'
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm'
+                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <svg className="w-8 h-8 fill-current text-emerald-600" viewBox="0 0 24 24">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.709 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                      </svg>
+                      <span className="text-xs font-black text-emerald-600">WhatsApp</span>
+                      <span className="text-[10px] text-slate-400">Gửi qua Cloud API</span>
+                    </button>
+                  </div>
+                </div>
 
-                {/* Sub-alert for verification status based on selected template */}
-                {(() => {
-                  const tmpl = store.getTemplates().find(t => t.id === bulkZnsTemplateId);
-                  if (!tmpl) return null;
-                  
-                  if (tmpl.status === 'approved') {
-                    return (
-                      <div className="p-3 bg-emerald-50 text-emerald-800 border border-emerald-150 rounded-xl text-[11px] font-medium flex items-start gap-2 animate-fade-in text-left">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                        <div>
-                          <strong>✓ Trạng thái phê duyệt: APPROVED</strong>
-                          <p className="text-slate-500 text-[10px] mt-0.5">Biểu mẫu này đã vượt qua quy trình kiểm duyệt chất lượng của Zalo Open API. Nội dung sẽ được gửi thực tế không qua sandbox.</p>
+                <div className="space-y-2">
+                  <label className="text-[11px] uppercase font-black tracking-wider text-slate-500 block">
+                    2. Chọn Mẫu Tin Nhắn Chuyên Biệt ({bulkChannel === 'zalo' ? 'Zalo Cloud Status' : 'WhatsApp Cloud Status'})
+                  </label>
+                  <select
+                    value={bulkZnsTemplateId}
+                    disabled={bulkSendingStatus === 'sending'}
+                    onChange={(e) => setBulkZnsTemplateId(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 hover:bg-slate-100/50 border border-slate-250 focus:border-teal-500 rounded-xl text-xs font-semibold focus:outline-none transition-all disabled:opacity-50"
+                  >
+                    <option value="">-- Chọn Mẫu {bulkChannel === 'zalo' ? 'Zalo ZNS' : 'WhatsApp'} --</option>
+                    {store.getTemplates()
+                      .filter(t => t.channel === bulkChannel)
+                      .map(t => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} (Code: {t.znsTemplateId || t.id}) - [{t.status === 'approved' ? 'DUYỆT CHÍNH THỨC' : t.status === 'rejected' ? 'BỊ TỪ CHỐI' : 'CHỜ DUYỆT'}]
+                        </option>
+                      ))
+                    }
+                  </select>
+
+                  {/* Sub-alert for verification status based on selected template */}
+                  {(() => {
+                    const tmpl = store.getTemplates().find(t => t.id === bulkZnsTemplateId);
+                    if (!tmpl) return null;
+                    
+                    if (tmpl.status === 'approved') {
+                      return (
+                        <div className="p-3 bg-emerald-50 text-emerald-800 border border-emerald-150 rounded-xl text-[11px] font-medium flex items-start gap-2 animate-fade-in text-left">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                          <div>
+                            <strong>✓ Trạng thái phê duyệt: APPROVED</strong>
+                            <p className="text-slate-500 text-[10px] mt-0.5">Biểu mẫu này đã vượt qua quy trình kiểm duyệt chất lượng. Nội dung sẽ được gửi thực tế không qua sandbox.</p>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  } else if (tmpl.status === 'rejected') {
-                    return (
-                      <div className="p-3 bg-rose-50 text-rose-800 border border-rose-150 rounded-xl text-[11px] font-medium flex items-start gap-2 animate-fade-in text-left">
-                        <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                        <div>
-                          <strong>✗ Trạng thái phê duyệt: REJECTED (Bị từ chối)</strong>
-                          <p className="text-slate-500 text-[10px] mt-0.5">Mẫu bị từ chối do vi phạm quy tắc thương hiệu hoặc spam. Sử dụng mẫu này sẽ kích hoạt cơ chế mô phỏng Sandbox của hệ thống.</p>
+                      );
+                    } else if (tmpl.status === 'rejected') {
+                      return (
+                        <div className="p-3 bg-rose-50 text-rose-800 border border-rose-150 rounded-xl text-[11px] font-medium flex items-start gap-2 animate-fade-in text-left">
+                          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                          <div>
+                            <strong>✗ Trạng thái phê duyệt: REJECTED (Bị từ chối)</strong>
+                            <p className="text-slate-500 text-[10px] mt-0.5">Mẫu bị từ chối do vi phạm quy tắc thương hiệu hoặc spam. Sử dụng mẫu này sẽ kích hoạt cơ chế mô phỏng Sandbox của hệ thống.</p>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  } else {
-                    return (
-                      <div className="p-3 bg-amber-50 text-amber-850 border border-amber-150 rounded-xl text-[11px] font-medium flex items-start gap-2 animate-fade-in text-left">
-                        <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                        <div>
-                          <strong>⏳ Trạng thái phê duyệt: PENDING (Chờ duyệt)</strong>
-                          <p className="text-slate-500 text-[10px] mt-0.5 font-medium">Đang chờ cổng kiểm duyệt cấp phép. Trên hệ thống ảo, tin nhắn vẫn sẽ gửi thông qua cơ chế mô phỏng Sandbox.</p>
+                      );
+                    } else {
+                      return (
+                        <div className="p-3 bg-amber-50 text-amber-850 border border-amber-150 rounded-xl text-[11px] font-medium flex items-start gap-2 animate-fade-in text-left">
+                          <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                          <div>
+                            <strong>⏳ Trạng thái phê duyệt: PENDING (Chờ duyệt)</strong>
+                            <p className="text-slate-500 text-[10px] mt-0.5 font-medium">Đang chờ cổng kiểm duyệt cấp phép. Trên hệ thống ảo, tin nhắn vẫn sẽ gửi thông qua cơ chế mô phỏng Sandbox.</p>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  }
-                })()}
+                      );
+                    }
+                  })()}
+                </div>
               </div>
 
               {/* Step 2: Recipients Preview */}
@@ -3951,7 +4016,9 @@ Ban Thư ký Hội nghị VSAPS 2026`
                   <label className="text-[11px] uppercase font-black tracking-wider text-slate-500">
                     2. Danh Sách Đại Biểu Đang Chờ ({selectedAttendeeIds.length} người)
                   </label>
-                  <span className="text-[10px] font-bold text-slate-400 font-mono">Channel: ZNS</span>
+                  <span className="text-[10px] font-bold text-slate-400 font-mono">
+                    Channel: {bulkChannel === 'zalo' ? 'Zalo ZNS' : 'WhatsApp'}
+                  </span>
                 </div>
 
                 <div className="max-h-52 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100 bg-slate-50/50">
@@ -4025,23 +4092,29 @@ Ban Thư ký Hội nghị VSAPS 2026`
               {(bulkSendingStatus === 'sending' || bulkSendingStatus === 'completed') && (
                 <div className="p-4 bg-slate-50 border border-slate-150 rounded-xl space-y-3 animate-fade-in text-left">
                   <div className="flex justify-between items-center text-[11px] font-bold">
-                    <span className="text-teal-850">Tiến trình triển khai cổng ZNS:</span>
-                    <span className="font-mono text-teal-700">{bulkProgress}% Hoàn tất</span>
+                    <span className="text-teal-850">
+                      Tiến trình triển khai cổng ${bulkChannel === 'zalo' ? 'Zalo ZNS' : 'WhatsApp'}:
+                    </span>
+                    <span className="font-mono text-teal-700">${bulkProgress}% Hoàn tất</span>
                   </div>
 
                   {/* Progress bar wrapper */}
                   <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-teal-500 to-emerald-500 h-full transition-all duration-300 rounded-full"
+                      className={`h-full transition-all duration-300 rounded-full ${
+                        bulkChannel === 'zalo' 
+                          ? 'bg-gradient-to-r from-teal-500 to-emerald-500' 
+                          : 'bg-gradient-to-r from-emerald-500 to-green-500'
+                      }`}
                       style={{ width: `${bulkProgress}%` }}
                     />
                   </div>
 
                   {/* Sending summary description list */}
                   <div className="flex justify-between text-[10.5px] font-bold text-slate-500 uppercase tracking-wider font-mono pt-1">
-                    <span>Thành công: <strong className="text-emerald-600">{bulkSendResults.filter(r => r.status === 'success').length}</strong></span>
-                    <span>Thất bại: <strong className="text-rose-600">{bulkSendResults.filter(r => r.status === 'failed').length}</strong></span>
-                    <span>Tổng số: <strong>{selectedAttendeeIds.length}</strong></span>
+                    <span>Thành công: <strong className="text-emerald-600">${bulkSendResults.filter(r => r.status === 'success').length}</strong></span>
+                    <span>Thất bại: <strong className="text-rose-600">${bulkSendResults.filter(r => r.status === 'failed').length}</strong></span>
+                    <span>Tổng số: <strong>${selectedAttendeeIds.length}</strong></span>
                   </div>
                 </div>
               )}
@@ -4062,23 +4135,27 @@ Ban Thư ký Hội nghị VSAPS 2026`
                 Đóng lại
               </button>
               
-              {bulkSendingStatus !== 'completed' ? (
+              ${bulkSendingStatus !== 'completed' ? (
                 <button
                   type="button"
                   disabled={bulkSendingStatus === 'sending' || !bulkZnsTemplateId}
                   onClick={async () => {
                     await handleStartBulkZns();
                   }}
-                  className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer border-none shadow-md transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  className={`px-5 py-2 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer border-none shadow-md transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                    bulkChannel === 'zalo' 
+                      ? 'bg-teal-600 hover:bg-teal-700' 
+                      : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
                 >
-                  {bulkSendingStatus === 'sending' ? (
+                  ${bulkSendingStatus === 'sending' ? (
                     <>
                       <RefreshCcw className="w-3.5 h-3.5 animate-spin" />
-                      Đang bắn ZNS...
+                      Đang bắn ${bulkChannel === 'zalo' ? 'ZNS' : 'WhatsApp'}...
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-3.5 h-3.5 mr-0.5 text-teal-100" />
+                      <Sparkles className="w-3.5 h-3.5 mr-0.5 text-white/80" />
                       Bắt Đầu Gửi Hàng Loạt
                     </>
                   )}
@@ -4099,7 +4176,6 @@ Ban Thư ký Hội nghị VSAPS 2026`
 
           </div>
         </div>
-      )}
-    </div>
+      )}    </div>
   );
 }

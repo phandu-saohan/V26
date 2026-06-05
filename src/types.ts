@@ -168,16 +168,24 @@ export interface EmailConfig {
   testEmail: string;
 }
 
+export interface WhatsappConfig {
+  accessToken: string;
+  phoneNumberId: string;
+  businessAccountId: string;
+  isConfigured: boolean;
+  testPhone: string;
+}
+
 export interface NotificationTemplate {
   id: string;
   name: string;
   type: 'registration_success' | 'payment_confirmed' | 'abstract_approved' | 'reminder_event';
-  channel: 'email' | 'zalo';
+  channel: 'email' | 'zalo' | 'whatsapp';
   subject?: string;
   content: string; // Chứa placeholder {{fullname}}, {{package}}, {{code}}...
   status?: 'approved' | 'pending' | 'rejected' | string; // Trạng thái phê duyệt ZNS Zalo
-  znsTemplateId?: string; // Mã số mẫu tin thực tế bên Zalo
-  znsType?: 'transaction' | 'promotion' | string; // Loại tin (Giao dịch / Quảng cáo)
+  znsTemplateId?: string; // Mã số mẫu tin thực tế bên Zalo hoặc Meta template name
+  znsType?: 'transaction' | 'promotion' | string; // Loại tin
 }
 
 export interface SupabaseConfig {
@@ -206,7 +214,7 @@ export interface SepayConfig {
 export interface SentNotificationLog {
   id: string;
   recipient: string;
-  type: 'zalo' | 'email';
+  type: 'zalo' | 'email' | 'whatsapp';
   templateId: string;
   templateName: string;
   sender: string;

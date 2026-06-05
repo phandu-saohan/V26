@@ -47,7 +47,7 @@ export default function NotificationSystem() {
 
   // Filter logs states
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'zalo' | 'email'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'zalo' | 'email' | 'whatsapp'>('all');
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
   const loadAll = () => {
@@ -131,7 +131,7 @@ export default function NotificationSystem() {
       } catch (err: any) {
         addLog(`[ERROR] Gửi email thất bại: ${err.message}`, 1200);
       }
-    } else {
+    } else if (testType === 'zalo') {
       addLog('Khởi động API Zalo ZNS Gateway v2...', 100);
       addLog('Thẩm định Access Token & OA ID trong thiết đặt liên minh...', 400);
       addLog(`Biên dịch payload cấu trúc ZNS: SĐT=${testReceiver}, Mẫu=${selectedTemplate?.id || 'tmpl-reg-zalo'}...`, 800);
@@ -147,6 +147,23 @@ export default function NotificationSystem() {
         }
       } catch (err: any) {
         addLog(`[ERROR] Bắn tin Zalo ZNS thất bại: ${err.message}`, 1200);
+      }
+    } else if (testType === 'whatsapp') {
+      addLog('Khởi động WhatsApp Business Cloud API v18.0...', 100);
+      addLog('Xác thực Access Token & Phone Number ID...', 400);
+      addLog(`Biên dịch payload cấu trúc WhatsApp: SĐT=${testReceiver}, Mẫu=${selectedTemplate?.znsTemplateId || 'vsaps_registration_success'}...`, 800);
+      
+      try {
+        const res = await store.sendWhatsapp(testAttendee);
+        addLog(`Tiến hành gọi thủ tục HTTP POST trực tiếp đến Meta Graph API...`, 1100);
+        if (res.status === 'success') {
+          addLog(`[WHATSAPP API SUCCESS] Bắn tin WhatsApp Template thành công!`, 1400);
+          addLog(`Mã phản hồi từ Meta: MsgID=${res.response?.data?.messages?.[0]?.id || res.response?.message_id || 'N/A'}`, 1750);
+        } else {
+          addLog(`[WHATSAPP API FAILED] Meta trả về mã lỗi: ${res.response?.message || res.response?.error?.message || 'N/A'}`, 1400);
+        }
+      } catch (err: any) {
+        addLog(`[ERROR] Bắn tin WhatsApp thất bại: ${err.message}`, 1200);
       }
     }
 
@@ -177,11 +194,11 @@ export default function NotificationSystem() {
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase ${
-                    tmpl.channel === 'email' ? 'bg-indigo-50 text-indigo-700' : 'bg-emerald-50 text-emerald-700'
-                  }`}>
-                    {tmpl.channel.toUpperCase()}
-                  </span>
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase ${
+                      tmpl.channel === 'email' ? 'bg-indigo-50 text-indigo-700' : tmpl.channel === 'whatsapp' ? 'bg-blue-50 text-blue-700' : 'bg-emerald-50 text-emerald-700'
+                    }`}>
+                      {tmpl.channel.toUpperCase()}
+                    </span>
                   <span className="text-[9px] font-mono text-slate-400 font-bold">{tmpl.id}</span>
                 </div>
                 <h4 className="font-bold text-slate-900 text-xs">{tmpl.name}</h4>
@@ -272,12 +289,13 @@ export default function NotificationSystem() {
                 >
                   <option value="email">SMTP Email Server</option>
                   <option value="zalo">Zalo OA ZNS Gateway</option>
+                  <option value="whatsapp">WhatsApp Business API</option>
                 </select>
               </div>
 
               <div>
                 <label className="text-[10px] font-bold text-slate-500 block mb-1">
-                  {testType === 'email' ? 'Địa chỉ hộp thư nhận *' : 'Số ĐT nhận SMS *'}
+                  {testType === 'email' ? 'Địa chỉ hộp thư nhận *' : 'Số ĐT nhận SMS/WhatsApp *'}
                 </label>
                 <input
                   type="text"
@@ -516,6 +534,7 @@ export default function NotificationSystem() {
             <option value="all">Tất cả kênh thông báo</option>
             <option value="zalo">Chỉ Zalo ZNS</option>
             <option value="email">Chỉ SMTP Email</option>
+            <option value="whatsapp">Chỉ WhatsApp</option>
           </select>
         </div>
 
@@ -549,7 +568,7 @@ export default function NotificationSystem() {
                         <td className="px-4 py-3 font-mono font-bold text-slate-600">{log.id}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center gap-1 font-bold px-1.5 py-0.5 rounded text-[9px] uppercase ${
-                            log.type === 'email' ? 'bg-indigo-50 text-indigo-700' : 'bg-emerald-50 text-emerald-700'
+                            log.type === 'email' ? 'bg-indigo-50 text-indigo-700' : log.type === 'whatsapp' ? 'bg-blue-50 text-blue-700' : 'bg-emerald-50 text-emerald-700'
                           }`}>
                             {log.type.toUpperCase()}
                           </span>

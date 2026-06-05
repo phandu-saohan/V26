@@ -20,6 +20,7 @@ import {
   BusinessConfig,
   EmbedScript,
   SepayConfig,
+  WhatsappConfig,
 } from './types';
 import { supabase, isSupabaseConfigured, uploadToSupabaseStorage } from './lib/supabase';
 import {
@@ -71,6 +72,14 @@ const DEFAULT_EMAIL_CONFIG: EmailConfig = {
   senderEmail: '',
   isConfigured: false,
   testEmail: '',
+};
+
+const DEFAULT_WHATSAPP_CONFIG: WhatsappConfig = {
+  accessToken: '',
+  phoneNumberId: '',
+  businessAccountId: '',
+  isConfigured: false,
+  testPhone: '',
 };
 
 const DEFAULT_BUSINESS_CONFIG: BusinessConfig = {
@@ -170,6 +179,7 @@ export class DataStore {
   private static KEY_BUSINESS_CONFIG = 'vsaps_business_config';
   private static KEY_EMBED_SCRIPTS = 'vsaps_embed_scripts';
   private static KEY_SEPAY = 'vsaps_config_sepay';
+  private static KEY_WHATSAPP = 'vsaps_config_whatsapp';
 
   // In-memory cache
   private attendees: Attendee[] = [];
@@ -182,6 +192,7 @@ export class DataStore {
   private packages: RegistrationPackage[] = [];
   private zaloConfig: ZaloConfig = DEFAULT_ZALO_CONFIG;
   private emailConfig: EmailConfig = DEFAULT_EMAIL_CONFIG;
+  private whatsappConfig: WhatsappConfig = DEFAULT_WHATSAPP_CONFIG;
   private templates: NotificationTemplate[] = [];
   private supabaseConfig: SupabaseConfig = { url: '', anonKey: '', isConnected: false };
   private notificationLogs: SentNotificationLog[] = [];
@@ -225,6 +236,7 @@ export class DataStore {
     };
     this.embedScripts = this.getLocalStorage(DataStore.KEY_EMBED_SCRIPTS, INITIAL_EMBED_SCRIPTS);
     this.sepayConfig = this.getLocalStorage(DataStore.KEY_SEPAY, DEFAULT_SEPAY_CONFIG);
+    this.whatsappConfig = this.getLocalStorage(DataStore.KEY_WHATSAPP, DEFAULT_WHATSAPP_CONFIG);
   }
 
   /**
@@ -347,6 +359,11 @@ export class DataStore {
         if (email) {
           this.emailConfig = email.value;
           this.saveToLocalStorage(DataStore.KEY_EMAIL, this.emailConfig);
+        }
+        const whatsapp = configs.find(c => c.key === 'whatsapp_config');
+        if (whatsapp) {
+          this.whatsappConfig = whatsapp.value;
+          this.saveToLocalStorage(DataStore.KEY_WHATSAPP, this.whatsappConfig);
         }
       }
 
@@ -1304,6 +1321,19 @@ export class DataStore {
     return config;
   }
 
+  getWhatsappConfig() { return this.whatsappConfig; }
+  saveWhatsappConfig(config: WhatsappConfig) {
+    this.whatsappConfig = config;
+    this.saveToLocalStorage(DataStore.KEY_WHATSAPP, config);
+
+    if (isSupabaseConfigured()) {
+      supabase.from('system_config').upsert({ key: 'whatsapp_config', value: config }).then(({ error }) => {
+        if (error) console.error('Error saving Whatsapp config to Supabase:', error);
+      });
+    }
+    return config;
+  }
+
   getTemplates() { return this.templates; }
   saveTemplate(template: NotificationTemplate) {
     const idx = this.templates.findIndex(t => t.id === template.id);
@@ -1609,6 +1639,213 @@ export class DataStore {
       templateId: template.id,
       templateName: template.name,
       sender: this.emailConfig.senderEmail || 'contact@vsapsevent.org',
+      sentAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      status,
+      payload,
+      response: responseObj
+    };
+
+    this.addNotificationLog(log);
+    return log;
+  }
+
+  async sendWhatsapp(attendee: Attendee, templateId?: string): Promise<SentNotificationLog> {
+    const template: NotificationTemplate = (templateId ? this.templates.find(t => t.id === templateId) : null)
+      || this.templates.find(t => t.channel === 'whatsapp' && t.type === 'registration_success')
+      || { 
+           id: 'tmpl-reg-wa', 
+           name: 'Đăng Ký Đại Biểu Thành Công (WhatsApp)', 
+           type: 'registration_success', 
+           channel: 'whatsapp', 
+           znsTemplateId: 'vsaps_registration_success',
+           content: '[VSAPS 2026] ĐĂNG KÝ THÀNH CÔNG\nXin chào {{title}} {{fullname}}. Bạn đã đăng ký thành công tham dự Hội nghị Khoa học VSAPS 2026.\n- Gói: {{package}}\n- Mã Đại biểu: {{code}}\n- Trạng thái: {{payment_status}}\nVui lòng quét mã QR vé để check-in. Trân trọng!'
+         };
+
+    let formattedPhone = attendee.phone.replace(/[^0-9]/g, '');
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '84' + formattedPhone.substring(1);
+    }
+
+    const payStatusText = attendee.paymentStatus === 'paid' ? 'Đã Thanh Toán' : attendee.paymentStatus === 'pending_verification' ? 'Chờ Đối Soát' : 'Chưa Thanh Toán';
+    const content = template.content
+      .replace(/\{\{title\}\}/g, attendee.title || '')
+      .replace(/\{\{fullname\}\}/g, attendee.fullName || '')
+      .replace(/\{\{package\}\}/g, attendee.packageName || '')
+      .replace(/\{\{code\}\}/g, attendee.id || '')
+      .replace(/\{\{payment_status\}\}/g, payStatusText)
+      .replace(/\{\{organization\}\}/g, attendee.organization || '');
+
+    const isRealWhatsapp = this.whatsappConfig.accessToken && this.whatsappConfig.phoneNumberId;
+
+    const payload = {
+      messaging_product: "whatsapp",
+      to: formattedPhone,
+      type: "template",
+      template: {
+        name: template.znsTemplateId || "vsaps_registration_success",
+        language: {
+          code: "vi"
+        },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              { type: "text", text: attendee.title || '' },
+              { type: "text", text: attendee.fullName || '' },
+              { type: "text", text: attendee.id || '' },
+              { type: "text", text: attendee.packageName || '' },
+              { type: "text", text: payStatusText }
+            ]
+          }
+        ]
+      },
+      raw_text_sent: content
+    };
+
+    let status: 'success' | 'failed' = 'success';
+    let responseObj: any = { message: "Tin nhắn WhatsApp đã gửi thành công giả lập (Sandbox)" };
+
+    if (isRealWhatsapp) {
+      try {
+        const response = await fetch('/api/whatsapp/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            config: this.whatsappConfig,
+            payload: payload
+          })
+        });
+        const resData = await response.json();
+        if (resData.success) {
+          responseObj = resData.data;
+          status = responseObj.error ? 'failed' : 'success';
+        } else {
+          status = 'failed';
+          responseObj = { error: -1, message: resData.error || "Lỗi gửi tin nhắn WhatsApp" };
+        }
+      } catch (err: any) {
+        status = 'failed';
+        responseObj = { error: -1, message: err.message || "Không thể gửi dữ liệu đến API WhatsApp" };
+      }
+    } else {
+      responseObj = {
+        error: 0,
+        message: "Thành công (Giả lập Sandbox)",
+        data: {
+          message_id: "wa-sim-" + Math.floor(Math.random() * 1000000000),
+          sent_time: new Date().toISOString()
+        }
+      };
+    }
+
+    const log: SentNotificationLog = {
+      id: 'NTF-' + Math.floor(Math.random() * 90000 + 10000),
+      recipient: attendee.phone,
+      type: 'whatsapp',
+      templateId: template.id,
+      templateName: template.name,
+      sender: 'WhatsApp Business API',
+      sentAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      status,
+      payload,
+      response: responseObj
+    };
+
+    this.addNotificationLog(log);
+    return log;
+  }
+
+  async sendWhatsappToSpeaker(speaker: SpeakerRegistration, templateId?: string): Promise<SentNotificationLog> {
+    const template: NotificationTemplate = (templateId ? this.templates.find(t => t.id === templateId) : null)
+      || this.templates.find(t => t.channel === 'whatsapp' && t.type === 'abstract_approved')
+      || { 
+           id: 'tmpl-speaker-wa', 
+           name: 'Nộp Bài Báo Cáo Thành Công (WhatsApp)', 
+           type: 'abstract_approved', 
+           channel: 'whatsapp', 
+           znsTemplateId: 'vsaps_speaker_success',
+           content: '[VSAPS 2026] NỘP BÁO CÁO THÀNH CÔNG\nXin chào {{title}} {{fullname}}. Đề tài báo cáo "{{presentation_title}}" của bạn đã được ghi nhận trên hệ thống sự kiện. Trạng thái: Chờ phê duyệt.'
+         };
+
+    let formattedPhone = speaker.phone.replace(/[^0-9]/g, '');
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '84' + formattedPhone.substring(1);
+    }
+
+    const content = template.content
+      .replace(/\{\{title\}\}/g, speaker.title || '')
+      .replace(/\{\{fullname\}\}/g, speaker.fullName || '')
+      .replace(/\{\{presentation_title\}\}/g, speaker.presentationTitle || '')
+      .replace(/\{\{track\}\}/g, speaker.presentationTrack || '');
+
+    const isRealWhatsapp = this.whatsappConfig.accessToken && this.whatsappConfig.phoneNumberId;
+
+    const payload = {
+      messaging_product: "whatsapp",
+      to: formattedPhone,
+      type: "template",
+      template: {
+        name: template.znsTemplateId || "vsaps_speaker_success",
+        language: {
+          code: "vi"
+        },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              { type: "text", text: speaker.title || '' },
+              { type: "text", text: speaker.fullName || '' },
+              { type: "text", text: speaker.presentationTitle || '' }
+            ]
+          }
+        ]
+      },
+      raw_text_sent: content
+    };
+
+    let status: 'success' | 'failed' = 'success';
+    let responseObj: any = { message: "Tin nhắn WhatsApp đã gửi thành công giả lập (Sandbox)" };
+
+    if (isRealWhatsapp) {
+      try {
+        const response = await fetch('/api/whatsapp/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            config: this.whatsappConfig,
+            payload: payload
+          })
+        });
+        const resData = await response.json();
+        if (resData.success) {
+          responseObj = resData.data;
+          status = responseObj.error ? 'failed' : 'success';
+        } else {
+          status = 'failed';
+          responseObj = { error: -1, message: resData.error || "Lỗi gửi tin nhắn WhatsApp" };
+        }
+      } catch (err: any) {
+        status = 'failed';
+        responseObj = { error: -1, message: err.message || "Không thể gửi dữ liệu đến API WhatsApp" };
+      }
+    } else {
+      responseObj = {
+        error: 0,
+        message: "Thành công (Giả lập Sandbox)",
+        data: {
+          message_id: "wa-sim-" + Math.floor(Math.random() * 1000000000),
+          sent_time: new Date().toISOString()
+        }
+      };
+    }
+
+    const log: SentNotificationLog = {
+      id: 'NTF-' + Math.floor(Math.random() * 90000 + 10000),
+      recipient: speaker.phone,
+      type: 'whatsapp',
+      templateId: template.id,
+      templateName: template.name,
+      sender: 'WhatsApp Business API',
       sentAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       status,
       payload,

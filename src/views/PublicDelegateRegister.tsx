@@ -267,12 +267,13 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
         'success'
       );
       
-      // Tự động gửi tin nhắn Zalo ZNS và Email kèm vé điện tử & mã check-in QR
+      // Gửi thông báo tự động (chạy background)
       try {
         store.sendZaloZNS(saved);
         store.sendEmail(saved);
+        store.sendWhatsapp(saved);
       } catch (err) {
-        console.error('Lỗi khi kích hoạt luồng bắn thông báo tự động:', err);
+        console.error('Lỗi khi gửi thông báo tự động:', err);
       }
 
       setCreatedAttendee(saved);

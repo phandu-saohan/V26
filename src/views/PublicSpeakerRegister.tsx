@@ -101,6 +101,13 @@ export default function PublicSpeakerRegister({ onNavigate }: PublicSpeakerRegis
         'badge'
       );
 
+      // Gửi thông báo tự động (chạy background)
+      try {
+        store.sendWhatsappToSpeaker(saved);
+      } catch (err) {
+        console.error('Lỗi khi gửi thông báo tự động:', err);
+      }
+
       setCreatedSpeaker(saved);
       setIsSubmitted(true);
     } catch (err: any) {

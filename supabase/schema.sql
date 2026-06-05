@@ -192,7 +192,7 @@ CREATE TABLE public.notification_templates (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     type TEXT NOT NULL, -- e.g. registration_success, payment_confirmed, reminder_event, abstract_approved
-    channel TEXT NOT NULL CHECK (channel IN ('email', 'zalo', 'sms')),
+    channel TEXT NOT NULL CHECK (channel IN ('email', 'zalo', 'sms', 'whatsapp')),
     subject TEXT,
     content TEXT NOT NULL,
     status TEXT DEFAULT 'approved' CHECK (status IN ('approved', 'pending', 'rejected')),
@@ -205,7 +205,7 @@ CREATE TABLE public.notification_templates (
 CREATE TABLE public.notification_logs (
     id TEXT PRIMARY KEY, -- Format: NTF-XXX
     recipient TEXT NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('email', 'zalo', 'sms')),
+    type TEXT NOT NULL CHECK (type IN ('email', 'zalo', 'sms', 'whatsapp')),
     template_id TEXT REFERENCES public.notification_templates(id) ON DELETE SET NULL,
     template_name TEXT,
     sender TEXT NOT NULL,
