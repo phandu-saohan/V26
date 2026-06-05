@@ -11,6 +11,7 @@ import { Attendee, RegistrationPackage } from '../types';
 import RichTextEditor from '../components/RichTextEditor';
 import { getProvinceList, getDistrictsOf, getWardsOf } from '../data/vnProvinces';
 import SepayPaymentChecker from '../components/SepayPaymentChecker';
+import { useFormLabel } from '../hooks/useFormLabel';
 
 interface PublicDelegateRegisterProps {
   onNavigate: (view: string) => void;
@@ -21,6 +22,7 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
   const containerRef = useRef<HTMLDivElement>(null);
   const businessConfig = store.getBusinessConfig();
   const formCfg = businessConfig.delegateFormConfig;
+  const L = useFormLabel(formCfg);
 
   // Auto-height postMessage for iframe embedding in WordPress
   useEffect(() => {
@@ -538,7 +540,9 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
             <div className="space-y-5">
               <div className="flex items-center gap-2 border-b border-teal-100 pb-2">
                 <span className="bg-teal-900 text-amber-400 font-mono font-bold px-2 py-0.5 rounded text-[10px]">01</span>
-                <h3 className="font-extrabold text-sm text-slate-900 uppercase tracking-wider">THÔNG TIN ĐẠI BIỂU ĐĂNG KÝ</h3>
+                <h3 className="font-extrabold text-sm text-slate-900 uppercase tracking-wider">
+                  {L.section('personalInfo', 'THÔNG TIN ĐẠI BIỂU ĐĂNG KÝ', 'DELEGATE PERSONAL INFORMATION')}
+                </h3>
               </div>
 
               {/* Avatar Section */}
@@ -547,7 +551,9 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                   {avatarImage ? (
                     <img src={avatarImage} className="w-full h-full object-cover" alt="Avatar" />
                   ) : (
-                    <span className="text-slate-400 text-[10px] font-bold text-center p-1 leading-none select-none">Chưa có ảnh</span>
+                    <span className="text-slate-400 text-[10px] font-bold text-center p-1 leading-none select-none">
+                      {L.t('Chưa có ảnh', 'No Photo')}
+                    </span>
                   )}
                   {isAvatarUploading && (
                     <div className="absolute inset-0 bg-slate-900/50 flex items-center justify-center text-[10px] text-white font-mono">
@@ -556,11 +562,15 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                   )}
                 </div>
                 <div className="space-y-1 text-center sm:text-left">
-                  <span className="text-xs font-bold text-slate-800 block uppercase tracking-wide">Ảnh Chân Dung / Avatar Đại Biểu *</span>
-                  <p className="text-[10px] text-slate-500 leading-snug">Khuyên dùng ảnh chân dung rõ mặt, nền sáng để check-in nhận diện khuôn mặt tức thì tại Lễ tân.</p>
+                  <span className="text-xs font-bold text-slate-800 block uppercase tracking-wide">
+                    {L.t('Ảnh Chân Dung / Avatar Đại Biểu *', 'Scientific Portrait / Avatar *')}
+                  </span>
+                  <p className="text-[10px] text-slate-500 leading-snug">
+                    {L.t('Khuyên dùng ảnh chân dung rõ mặt, nền sáng để check-in nhận diện khuôn mặt tức thì tại Lễ tân.', 'Face portrait photo is recommended for instant face recognition check-in at reception.')}
+                  </p>
                   <div className="flex items-center justify-center sm:justify-start gap-2 pt-1.5">
                     <label className="px-3 py-1 bg-white hover:bg-slate-100 border border-slate-350 text-[11px] font-bold rounded-lg cursor-pointer transition-all select-none">
-                      Tải ảnh lên
+                      {L.t('Tải ảnh lên', 'Upload Photo')}
                       <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                     </label>
                     {avatarImage && (
@@ -569,7 +579,7 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                         onClick={() => setAvatarImage(null)}
                         className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 text-[11px] font-semibold rounded-lg border-none cursor-pointer"
                       >
-                        Xóa ảnh
+                        {L.t('Xóa ảnh', 'Remove Photo')}
                       </button>
                     )}
                   </div>
@@ -579,7 +589,9 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
               {/* Title & Name */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                 <div className="md:col-span-3">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Học hàm / Học vị *</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {L.t('Học hàm / Học vị *', 'Academic Title *')}
+                  </label>
                   <select
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
@@ -600,19 +612,23 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                 </div>
 
                 <div className="md:col-span-6">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Họ và Tên (In hoa có dấu) *</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {L.t('Họ và Tên (In hoa có dấu) *', 'Full Name (Capitalized) *')}
+                  </label>
                   <input
                     type="text"
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value.toUpperCase())}
-                    placeholder="ví dụ: NGUYỄN VĂN A"
+                    placeholder={L.p('ví dụ: NGUYỄN VĂN A', 'e.g. NGUYEN VAN A')}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl text-xs font-bold focus:border-teal-600 focus:outline-none focus:bg-white uppercase tracking-wider transition-all placeholder-slate-400"
                   />
                 </div>
 
                 <div className="md:col-span-3">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Giới tính *</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {L.t('Giới tính *', 'Gender *')}
+                  </label>
                   <div className="flex bg-slate-50 rounded-xl border border-slate-200 p-1">
                     <button
                       type="button"
@@ -621,7 +637,7 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                         gender === 'Nam' ? 'bg-white text-teal-950 shadow-sm' : 'text-slate-500 hover:text-slate-800'
                       }`}
                     >
-                      Nam
+                      {L.t('Nam', 'Male')}
                     </button>
                     <button
                       type="button"
@@ -630,7 +646,7 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                         gender === 'Nữ' ? 'bg-white text-teal-950 shadow-sm' : 'text-slate-500 hover:text-slate-800'
                       }`}
                     >
-                      Nữ
+                      {L.t('Nữ', 'Female')}
                     </button>
                   </div>
                 </div>
@@ -640,40 +656,50 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                 
                 <div className="md:col-span-4">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Năm sinh *</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {L.t('Năm sinh *', 'Year of Birth *')}
+                  </label>
                   <input
                     type="text"
                     required
                     maxLength={4}
                     value={yearOfBirth}
                     onChange={(e) => setYearOfBirth(e.target.value.replace(/\D/g, ''))}
-                    placeholder="ví dụ: 1988"
+                    placeholder={L.p('ví dụ: 1988', 'e.g. 1988')}
                     className="w-full px-3.5 py-2.5 bg-slate-55 border border-slate-200 rounded-xl text-xs font-mono font-bold focus:border-teal-600 focus:outline-none placeholder-slate-400"
                   />
-                  <span className="text-[10px] text-slate-400 mt-1 block">Cần thiết cho chứng chỉ CME</span>
+                  <span className="text-[10px] text-slate-400 mt-1 block">
+                    {L.t('Cần thiết cho chứng chỉ CME', 'Required for CME certification')}
+                  </span>
                 </div>
 
                 <div className="md:col-span-4">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Số điện thoại liên hệ *</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {L.t('Số điện thoại liên hệ *', 'Contact Phone Number *')}
+                  </label>
                   <input
                     type="tel"
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="ví dụ: 0912345678"
+                    placeholder={L.p('ví dụ: 0912345678', 'e.g. 0912345678')}
                     className="w-full px-3.5 py-2.5 bg-slate-55 border border-slate-200 rounded-xl text-xs font-mono font-bold focus:border-teal-600 focus:outline-none placeholder-slate-400 animate-fade-in"
                   />
-                  <span className="text-[10px] text-slate-400 mt-1 block">Zalo OA dùng để gửi vé QR tự động</span>
+                  <span className="text-[10px] text-slate-400 mt-1 block">
+                    {L.t('Zalo OA dùng để gửi vé QR tự động', 'Zalo OA for automated QR ticket sending')}
+                  </span>
                 </div>
 
                 <div className="md:col-span-4">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Địa chỉ Email nhận vé & CME *</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {L.t('Địa chỉ Email nhận vé & CME *', 'Email for Ticket & CME *')}
+                  </label>
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="ví dụ: bacsi.nguyen@gmail.com"
+                    placeholder={L.p('ví dụ: bacsi.nguyen@gmail.com', 'e.g. doctor@gmail.com')}
                     className="w-full px-3.5 py-2.5 bg-slate-55 border border-slate-200 rounded-xl text-xs font-semibold focus:border-teal-600 focus:outline-none placeholder-slate-400"
                   />
                 </div>
@@ -682,13 +708,15 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
               {/* Work Affiliation & Area */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                 <div className="md:col-span-12">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Đơn vị công tác (Bệnh viện/Khoa Y/Viện thẩm mỹ) *</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {L.t('Đơn vị công tác (Bệnh viện/Khoa Y/Viện thẩm mỹ) *', 'Workplace (Hospital/Medical School/Clinic) *')}
+                  </label>
                   <input
                     type="text"
                     required
                     value={organization}
                     onChange={(e) => setOrganization(e.target.value)}
-                    placeholder="ví dụ: Bệnh viện Chợ Rẫy"
+                    placeholder={L.p('ví dụ: Bệnh viện Chợ Rẫy', 'e.g. Cho Ray Hospital')}
                     className="w-full px-3.5 py-2.5 bg-slate-55 border border-slate-200 rounded-xl text-xs font-semibold focus:border-teal-600 focus:outline-none placeholder-slate-400"
                   />
                 </div>
@@ -697,19 +725,23 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
               {/* Contact Address & Nationality */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                 <div className="md:col-span-8">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Địa chỉ liên hệ *</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {L.t('Địa chỉ liên hệ *', 'Contact Address *')}
+                  </label>
                   <input
                     type="text"
                     required
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    placeholder="ví dụ: Phường Thảo Điền, Thành phố Thủ Đức, Hồ Chí Minh"
+                    placeholder={L.p('ví dụ: Phường Thảo Điền, Thành phố Thủ Đức, Hồ Chí Minh', 'e.g. Thao Dien, Thu Duc City, Ho Chi Minh City')}
                     className="w-full px-3.5 py-2.5 bg-slate-55 border border-slate-200 rounded-xl text-xs font-semibold focus:border-teal-600 focus:outline-none placeholder-slate-400"
                   />
                 </div>
 
                 <div className="md:col-span-4">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Quốc tịch *</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {L.t('Quốc tịch *', 'Nationality *')}
+                  </label>
                   <div className="flex bg-slate-50 border border-slate-200 rounded-xl p-1 gap-1.5 mt-1">
                     <button
                       type="button"
@@ -718,7 +750,7 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                         nationality === 'vietname' ? 'bg-teal-900 text-amber-400 shadow' : 'text-slate-500 hover:text-slate-800'
                       }`}
                     >
-                      Việt Nam
+                      {L.t('Việt Nam', 'Vietnam')}
                     </button>
                     <button
                       type="button"
@@ -727,7 +759,7 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                         nationality === 'foreign' ? 'bg-teal-900 text-amber-400 shadow' : 'text-slate-500 hover:text-slate-800'
                       }`}
                     >
-                      Nước Ngoài / International
+                      {L.t('Nước Ngoài', 'International')}
                     </button>
                   </div>
                 </div>
@@ -739,14 +771,20 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
               <div className="flex items-center justify-between border-b border-teal-100 pb-2">
                 <div className="flex items-center gap-2">
                   <span className="bg-teal-900 text-amber-400 font-mono font-bold px-2 py-0.5 rounded text-[10px]">02</span>
-                  <h3 className="font-extrabold text-sm text-slate-900 uppercase tracking-wider">Thời điểm & Dịch vụ phụ trội tự chọn</h3>
+                  <h3 className="font-extrabold text-sm text-slate-900 uppercase tracking-wider">
+                    {L.section('scheduleAddOns', 'THỜI ĐIỂM & DỊCH VỤ PHỤ TRỢ TỰ CHỌN', 'SCHEDULE & OPTIONAL ADD-ON SERVICES')}
+                  </h3>
                 </div>
-                <span className="text-[10px] text-teal-700 bg-teal-50 px-2.5 py-0.5 rounded-full font-bold">Lựa chọn trực quan</span>
+                <span className="text-[10px] text-teal-700 bg-teal-50 px-2.5 py-0.5 rounded-full font-bold">
+                  {L.t('Lựa chọn trực quan', 'Visual Options')}
+                </span>
               </div>
 
               {/* Time Period picker */}
               <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl space-y-2">
-                <label className="block text-xs font-bold text-amber-950 uppercase tracking-wider">Lựa chọn Thời điểm Đăng ký *</label>
+                <label className="block text-xs font-bold text-amber-950 uppercase tracking-wider">
+                  {L.t('Lựa chọn Thời điểm Đăng ký *', 'Registration Timeline Option *')}
+                </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -757,8 +795,10 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                         : 'bg-white text-slate-600 border-slate-200 hover:border-slate-350'
                     }`}
                   >
-                    <span>Trước Ngày 10/11/2026 (Giá Ưu Đãi)</span>
-                    <span className="font-mono text-[9px] px-2 py-0.5 bg-amber-400/10 text-amber-500 rounded font-normal">Được khuyên dùng</span>
+                    <span>{L.t('Trước Ngày 10/11/2026 (Giá Ưu Đãi)', 'Before Nov 10, 2026 (Early Bird)')}</span>
+                    <span className="font-mono text-[9px] px-2 py-0.5 bg-amber-400/10 text-amber-500 rounded font-normal">
+                      {L.t('Được khuyên dùng', 'Recommended')}
+                    </span>
                   </button>
                   <button
                     type="button"
@@ -769,12 +809,14 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                         : 'bg-white text-slate-600 border-slate-200 hover:border-slate-350'
                     }`}
                   >
-                    <span>Từ 10/11/2026 trở đi (Giá Cận Sự Kiện)</span>
-                    <span className="font-mono text-[9px] px-2 py-0.5 bg-rose-500/15 text-rose-500 rounded font-normal">Cận hội nghị</span>
+                    <span>{L.t('Từ 10/11/2026 trở đi (Giá Cận Sự Kiện)', 'From Nov 10, 2026 (Regular Price)')}</span>
+                    <span className="font-mono text-[9px] px-2 py-0.5 bg-rose-500/15 text-rose-500 rounded font-normal">
+                      {L.t('Cận hội nghị', 'Regular')}
+                    </span>
                   </button>
                 </div>
                 <p className="text-[9.5px] text-slate-500 leading-snug">
-                  * Biểu giá chi tiết của gói học tập và dịch vụ phụ trội (như Tour tham quan) tự động quy đổi theo thời điểm quý đại biểu chọn.
+                  {L.t('* Biểu giá chi tiết của gói học tập và dịch vụ phụ trội (như Tour tham quan) tự động quy đổi theo thời điểm quý đại biểu chọn.', '* Detailed pricing for packages and add-ons (e.g., tours) automatically adapts to your selected date.')}
                 </p>
               </div>
 
@@ -801,10 +843,10 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                     />
                     <div>
                       <span className="text-xs font-black text-slate-900 block uppercase">
-                        Chứng chỉ CME (+ 350.000đ)
+                        {L.t('Chứng chỉ CME (+ 350.000đ)', 'CME Certificate (+ 350,000 VND)')}
                       </span>
                       <span className="text-[10px] text-slate-500 block leading-relaxed mt-0.5">
-                        Nhận chứng chỉ đào tạo y khoa liên tục CME sau khi kết thúc khóa học tham luận.
+                        {L.t('Nhận chứng chỉ đào tạo y khoa liên tục CME sau khi kết thúc khóa học tham luận.', 'Receive Continuing Medical Education (CME) certificate after completing the sessions.')}
                       </span>
                     </div>
                   </div>
@@ -831,10 +873,10 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                     />
                     <div>
                       <span className="text-xs font-black text-amber-850 block uppercase">
-                        Gala Dinner (+ 700.000đ)
+                        {L.t('Gala Dinner (+ 700.000đ)', 'Gala Dinner (+ 700,000 VND)')}
                       </span>
                       <span className="text-[10px] text-slate-500 block leading-relaxed mt-0.5">
-                        Đăng ký tiệc tối ẩm thực giao lưu kết nối thân mật y sỹ.
+                        {L.t('Đăng ký tiệc tối ẩm thực giao lưu kết nối thân mật y sỹ.', 'Register for the evening Gala Dinner for friendly medical networking.')}
                       </span>
                     </div>
                   </div>
@@ -861,10 +903,10 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                     />
                     <div>
                       <span className="text-xs font-black text-purple-850 block uppercase">
-                        Master class (+ 500.000đ)
+                        {L.t('Master class (+ 500.000đ)', 'Master class (+ 500,000 VND)')}
                       </span>
                       <span className="text-[10px] text-slate-500 block leading-relaxed mt-0.5">
-                        Nhận truyền thụ và chuyển giao công nghệ thẩm mỹ lâm sàn chuyên sâu.
+                        {L.t('Nhận truyền thụ và chuyển giao công nghệ thẩm mỹ lâm sàn chuyên sâu.', 'Receive knowledge sharing and technology transfer for advanced aesthetic clinical methods.')}
                       </span>
                     </div>
                   </div>
@@ -891,10 +933,10 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                     />
                     <div>
                       <span className="text-xs font-black text-pink-850 block uppercase">
-                        Tour tham quan {period === 'pre_10_11' ? '(+ 4.500.000đ)' : '(+ 5.000.000đ)'}
+                        {L.t(`Tour tham quan ${period === 'pre_10_11' ? '(+ 4.500.000đ)' : '(+ 5.000.000đ)'}`, `Sightseeing Tour ${period === 'pre_10_11' ? '(+ 4,500,000 VND)' : '(+ 5,000,000 VND)'}`)}
                       </span>
                       <span className="text-[10px] text-slate-500 block leading-relaxed mt-0.5">
-                        Đóng phí Tour tham luận văn hóa dã ngoại theo lịch trình hội nghị độc giả.
+                        {L.t('Đóng phí Tour tham luận văn hóa dã ngoại theo lịch trình hội nghị độc giả.', 'Register for cultural tour field trips following the official schedule.')}
                       </span>
                     </div>
                   </div>
@@ -908,7 +950,9 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
             <div className="space-y-4 pt-4 border-t border-slate-100">
               <div className="flex items-center gap-2 border-b border-teal-100 pb-2">
                 <span className="bg-teal-900 text-amber-400 font-mono font-bold px-2 py-0.5 rounded text-[10px]">03</span>
-                <h3 className="font-extrabold text-sm text-slate-900 uppercase tracking-wider">CHỌN GÓI ĐĂNG KÝ HỘI NGHỊ</h3>
+                <h3 className="font-extrabold text-sm text-slate-900 uppercase tracking-wider">
+                  {L.section('package', 'CHỌN GÓI ĐĂNG KÝ HỘI NGHỊ', 'CONFERENCE REGISTRATION PACKAGE')}
+                </h3>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -931,7 +975,10 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                             pkg.id === 'pkg-member' ? 'bg-indigo-100 text-indigo-850 border border-indigo-200' :
                             pkg.id === 'pkg-standard' ? 'bg-teal-100 text-teal-850 border border-teal-100' : 'bg-slate-100 text-slate-700'
                           }`}>
-                            {pkg.id === 'pkg-member' ? 'Hội Viên' : pkg.id === 'pkg-standard' ? 'Standard' : pkg.id === 'pkg-student' ? 'Học Viên' : pkg.id === 'pkg-free' ? 'Báo cáo viên' : 'Foreigner'}
+                            {pkg.id === 'pkg-member' ? L.t('Hội Viên', 'Member') : 
+                             pkg.id === 'pkg-standard' ? L.t('Tiêu chuẩn', 'Standard') : 
+                             pkg.id === 'pkg-student' ? L.t('Học Viên', 'Student/Resident') : 
+                             pkg.id === 'pkg-free' ? L.t('Báo cáo viên', 'Speaker') : L.t('Nước ngoài', 'Foreigner')}
                           </span>
                           {isSelected && <span className="w-5 h-5 rounded-full bg-teal-600 flex items-center justify-center text-white text-xs">✓</span>}
                         </div>
@@ -941,13 +988,13 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                           
                           <div className="flex flex-wrap gap-1 mt-1.5">
                             {pkg.id === 'pkg-free' ? (
-                              <span className="px-1 py-0.2 bg-teal-50 text-teal-800 border border-teal-100 rounded text-[7.5px] font-black">✓ MIỄN PHÍ</span>
+                              <span className="px-1 py-0.2 bg-teal-50 text-teal-800 border border-teal-100 rounded text-[7.5px] font-black">{L.t('✓ MIỄN PHÍ', '✓ FREE')}</span>
                             ) : (
-                              <span className="px-1 py-0.2 bg-slate-100 text-slate-400 rounded text-[7.5px] font-bold">Phí tự chọn phụ trợ</span>
+                              <span className="px-1 py-0.2 bg-slate-100 text-slate-400 rounded text-[7.5px] font-bold">{L.t('Phí tự chọn phụ trợ', 'Add-on fees excluded')}</span>
                             )}
                           </div>
 
-                          <span className="text-[9.5px] text-slate-400 block mt-3.5 uppercase font-bold tracking-wider font-mono">QUYỀN LỢI ĐI KÈM:</span>
+                          <span className="text-[9.5px] text-slate-400 block mt-3.5 uppercase font-bold tracking-wider font-mono">{L.t('QUYỀN LỢI ĐI KÈM:', 'BENEFITS INCLUDED:')}</span>
                           <ul className="text-[10px] text-slate-500 space-y-1.5 mt-1.5 list-disc pl-3">
                             {pkg.benefits.map((b, i) => (
                               <li key={i} className="leading-tight">{b}</li>
@@ -970,16 +1017,22 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
               <div className="flex items-center justify-between border-b border-teal-100 pb-2">
                 <div className="flex items-center gap-2">
                   <span className="bg-teal-900 text-amber-400 font-mono font-bold px-2 py-0.5 rounded text-[10px]">04</span>
-                  <h3 className="font-extrabold text-sm text-slate-900 uppercase tracking-wider">THÔNG TIN THANH TOÁN (DUY NHẤT CHUYỂN KHOẢN VIETQR)</h3>
+                  <h3 className="font-extrabold text-sm text-slate-900 uppercase tracking-wider">
+                    {L.section('payment', 'THÔNG TIN THANH TOÁN (DUY NHẤT CHUYỂN KHOẢN VIETQR)', 'PAYMENT INFORMATION (VIETQR BANK TRANSFER ONLY)')}
+                  </h3>
                 </div>
-                <span className="text-[9.5px] text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded font-mono font-extrabold tracking-wide uppercase">CẬP NHẬT LIVE ⚡</span>
+                <span className="text-[9.5px] text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded font-mono font-extrabold tracking-wide uppercase">
+                  {L.t('CẬP NHẬT LIVE ⚡', 'LIVE UPDATE ⚡')}
+                </span>
               </div>
 
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-250/60 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                 
                 {/* Visual VietQR automatic code matching requirement */}
                 <div className="md:col-span-5 bg-white p-4 rounded-xl border border-slate-200 flex flex-col items-center shadow-md select-none text-center">
-                  <span className="text-[9.5px] uppercase font-bold tracking-widest text-slate-400 mb-2 font-mono block">QUÉT QR THANH TOÁN TỨC THÌ</span>
+                  <span className="text-[9.5px] uppercase font-bold tracking-widest text-slate-400 mb-2 font-mono block">
+                    {L.t('QUET QR THANH TOAN TUC THI', 'SCAN QR FOR INSTANT PAYMENT')}
+                  </span>
                   
                   <div className="p-1 px-[10px] bg-white border border-slate-100 rounded-lg relative group">
                     <img 
@@ -994,7 +1047,7 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                   </div>
 
                   <p className="text-[9.5px] text-slate-500 leading-snug mt-3 font-sans max-w-[200px]">
-                    Sử dụng ứng dụng Momo, ZaloPay, ViettelPay hoặc bất kỳ app ngân hàng Việt Nam để quét nhanh.
+                    {L.t('Sử dụng ứng dụng Momo, ZaloPay, ViettelPay hoặc bất kỳ app ngân hàng Việt Nam để quét nhanh.', 'Use Momo, ZaloPay, ViettelPay, or any banking app to scan and pay.')}
                   </p>
                 </div>
 
@@ -1002,38 +1055,40 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                 <div className="md:col-span-7 space-y-4">
                   <div className="space-y-2 text-xs">
                     <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-200/50">
-                      <span className="text-slate-500 font-semibold">Tài khoản thụ hưởng:</span>
+                      <span className="text-slate-500 font-semibold">{L.t('Tài khoản thụ hưởng:', 'Beneficiary Account:')}</span>
                       <strong className="col-span-2 text-slate-900">0331000516283</strong>
                     </div>
                     <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-200/50">
-                      <span className="text-slate-500 font-semibold">Ngân hàng:</span>
-                      <strong className="col-span-2 text-slate-900 font-sans">Vietcombank (Ngân hàng TMCP Ngoại thương Việt Nam)</strong>
+                      <span className="text-slate-500 font-semibold">{L.t('Ngân hàng:', 'Bank:')}</span>
+                      <strong className="col-span-2 text-slate-900 font-sans">{L.t('Vietcombank (Ngân hàng TMCP Ngoại thương Việt Nam)', 'Vietcombank (Joint Stock Commercial Bank for Foreign Trade of Vietnam)')}</strong>
                     </div>
                     <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-200/50">
-                      <span className="text-slate-500 font-semibold">Tên chủ tài khoản:</span>
+                      <span className="text-slate-500 font-semibold">{L.t('Tên chủ tài khoản:', 'Account Name:')}</span>
                       <strong className="col-span-2 text-slate-900 uppercase">Hoi phau thuat tao hinh tham my Viet Nam</strong>
                     </div>
                     <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-200/50">
-                      <span className="text-slate-500 font-semibold">Chi tiết tiền đăng ký:</span>
+                      <span className="text-slate-500 font-semibold">{L.t('Chi tiết tiền đăng ký:', 'Registration Fee Breakdown:')}</span>
                       <div className="col-span-2 text-slate-700 text-xs space-y-1">
-                        <div>• Phí gốc ({selectedPackage?.name}): <strong>{baseFee.toLocaleString()}đ</strong></div>
-                        {extraCme > 0 && <div>• Phí cấp chứng chỉ CME: <strong>+{extraCme.toLocaleString()}đ</strong></div>}
-                        {extraGala > 0 && <div>• Phí Đêm tiệc Gala Dinner: <strong>+{extraGala.toLocaleString()}đ</strong></div>}
-                        {extraMasterclass > 0 && <div>• Phí Đăng ký Master class: <strong>+{extraMasterclass.toLocaleString()}đ</strong></div>}
-                        {extraTour > 0 && <div>• Phí Tour du lịch dã ngoại: <strong>+{extraTour.toLocaleString()}đ</strong></div>}
+                        <div>• {L.t('Phí gốc', 'Base fee')} ({selectedPackage?.name}): <strong>{baseFee.toLocaleString()}đ</strong></div>
+                        {extraCme > 0 && <div>• {L.t('Phí cấp chứng chỉ CME:', 'CME Certificate fee:')} <strong>+{extraCme.toLocaleString()}đ</strong></div>}
+                        {extraGala > 0 && <div>• {L.t('Phí Đêm tiệc Gala Dinner:', 'Gala Dinner fee:')} <strong>+{extraGala.toLocaleString()}đ</strong></div>}
+                        {extraMasterclass > 0 && <div>• {L.t('Phí Đăng ký Master class:', 'Master class fee:')} <strong>+{extraMasterclass.toLocaleString()}đ</strong></div>}
+                        {extraTour > 0 && <div>• {L.t('Phí Tour du lịch dã ngoại:', 'Sightseeing Tour fee:')} <strong>+{extraTour.toLocaleString()}đ</strong></div>}
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-200/50 text-teal-900 bg-teal-50/50 p-1.5 rounded-lg">
-                      <span className="text-teal-900 font-bold">Tổng tiền cần chuyển:</span>
+                      <span className="text-teal-900 font-bold">{L.t('Tổng tiền cần chuyển:', 'Total Amount Due:')}</span>
                       <strong className="col-span-2 text-teal-950 text-sm font-black font-mono">{calculatedTotalFee.toLocaleString()} VNĐ</strong>
                     </div>
                     <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-200/50">
-                      <span className="text-slate-500 font-semibold">Nội dung cú pháp CK:</span>
+                      <span className="text-slate-500 font-semibold">{L.t('Nội dung cú pháp CK:', 'Transfer Memo Syntax:')}</span>
                       <div className="col-span-2 flex flex-col">
                         <strong className="text-amber-800 text-xs font-black font-mono bg-amber-50 rounded px-2 py-0.5 select-all border border-amber-250/50 w-fit">
                           {transferMessage}
                         </strong>
-                        <span className="text-[9.5px] text-amber-600 font-medium font-sans mt-0.5 italic">Hệ thống khuyến khích chuyển khoản đúng cú pháp để duyệt phiếu tự động sau 1 phút.</span>
+                        <span className="text-[9.5px] text-amber-600 font-medium font-sans mt-0.5 italic">
+                          {L.t('Hệ thống khuyến khích chuyển khoản đúng cú pháp để duyệt phiếu tự động sau 1 phút.', 'Please input the exact transfer memo above to activate automatic approval within 1 minute.')}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1041,12 +1096,12 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                   {/* Proof of Payment file uploader */}
                   <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-2.5 shadow-sm">
                     <label className="block text-xs font-bold text-slate-900 uppercase tracking-wide">
-                      Tải Tấm Ảnh Giao Dịch Thành Công (Để BTC đối soát nhanh) *
+                      {L.t('Tải Tấm Ảnh Giao Dịch Thành Công (Để BTC đối soát nhanh) *', 'Upload Payment Receipt / Proof of Transaction *')}
                     </label>
                     <div className="flex items-center gap-3">
                       <label id="lbl-upload-proof" className="px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 cursor-pointer text-xs font-bold text-slate-700 flex items-center gap-1.5 transition-all w-fit">
                         <Upload className="w-4 h-4 text-slate-500" />
-                        Đính kèm hóa đơn
+                        {L.t('Đính kèm hóa đơn', 'Attach Receipt')}
                         <input
                           type="file"
                           accept="image/*"
@@ -1054,8 +1109,8 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                           className="hidden"
                         />
                       </label>
-                      {isUploading && <span className="text-[10px] text-slate-400 font-mono animate-pulse">Đang nạp file...</span>}
-                      {proofImage && <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">✓ Đã nạp ảnh thành công!</span>}
+                      {isUploading && <span className="text-[10px] text-slate-400 font-mono animate-pulse">{L.t('Đang nạp file...', 'Uploading file...')}</span>}
+                      {proofImage && <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">✓ {L.t('Đã nạp ảnh thành công!', 'File uploaded successfully!')}</span>}
                     </div>
                     {proofImage && (
                       <div className="relative w-fit mt-1">
@@ -1083,8 +1138,8 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
               <RichTextEditor
                 value={notes}
                 onChange={setNotes}
-                label="Ghi chú yêu cầu đặc biệt khác cho BTC"
-                placeholder="ví dụ: Đóng gói ăn chay, Xuất hóa đơn đỏ cho cơ quan bệnh viện công (ghi rõ MST, Tên tổ chức)..."
+                label={L.t('Ghi chú yêu cầu đặc biệt khác cho BTC', 'Special notes or request for Organizer')}
+                placeholder={L.p('ví dụ: Đóng gói ăn chay, Xuất hóa đơn đỏ cho cơ quan bệnh viện công (ghi rõ MST, Tên tổ chức)...', 'e.g. Vegetarian meal request, Invoice request with Tax code and Organization name...')}
                 id="delegate-notes"
               />
             </div>
@@ -1098,10 +1153,10 @@ export default function PublicDelegateRegister({ onNavigate }: PublicDelegateReg
                 className="w-full py-4 rounded-2xl bg-teal-900 hover:bg-teal-950 disabled:opacity-50 text-white font-extrabold text-[12.5px] uppercase tracking-widest cursor-pointer shadow-lg hover:shadow-xl transition-all border border-amber-400/40 relative group overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-amber-400/10 via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out" />
-                {isSubmitting ? 'Đang gửi thông tin đăng ký...' : 'Xác Nhận Đăng Ký Gửi Cho Ban Tổ Chức ⚡'}
+                {isSubmitting ? L.t('Đang gửi thông tin đăng ký...', 'Submitting registration details...') : L.t('Xác Nhận Đăng Ký Gửi Cho Ban Tổ Chức ⚡', 'Confirm & Send Registration to Organizer ⚡')}
               </button>
               <span className="text-[10px] text-slate-400 italic mt-2.5 text-center block leading-relaxed font-sans">
-                Ấn nút đăng ký, thẻ đeo check-in và hóa đơn chuyển tiền sẽ được xuất bản lập tức. Ban thư ký VSAPS sẽ đồng thời đối soát tiền chuyển khoản real-time trên tài khoản.
+                {L.t('Ấn nút đăng ký, thẻ đeo check-in và hóa đơn chuyển tiền sẽ được xuất bản lập tức. Ban thư ký VSAPS sẽ đồng thời đối soát tiền chuyển khoản real-time trên tài khoản.', 'By clicking register, your check-in badge and transfer invoice will be published instantly. The VSAPS secretariat will verify the bank transfer transaction in real-time.')}
               </span>
             </div>
 

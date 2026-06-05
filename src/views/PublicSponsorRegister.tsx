@@ -9,6 +9,7 @@ import { store } from '../dataStore';
 import { sendRealtimeNotification } from '../lib/realtime';
 import { Sponsor } from '../types';
 import RichTextEditor from '../components/RichTextEditor';
+import { useFormLabel } from '../hooks/useFormLabel';
 
 interface PublicSponsorRegisterProps {
   onNavigate: (view: string) => void;
@@ -75,6 +76,7 @@ const SPONSOR_TIERS = [
 export default function PublicSponsorRegister({ onNavigate }: PublicSponsorRegisterProps) {
   const businessConfig = store.getBusinessConfig();
   const formCfg = businessConfig.sponsorFormConfig;
+  const L = useFormLabel(formCfg);
   // Form States
   const [name, setName] = useState('');
   const [tier, setTier] = useState<'platinum' | 'gold' | 'silver' | 'bronze' | 'co_sponsor'>('gold');
@@ -350,12 +352,14 @@ export default function PublicSponsorRegister({ onNavigate }: PublicSponsorRegis
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
                 <span className="w-1.5 h-3.5 bg-teal-600 rounded"></span>
-                1. Hồ Sơ Doanh Nghiệp Tài Trợ
+                {L.section('sponsorProfile', '1. Hồ Sơ Doanh Nghiệp Tài Trợ', '1. Sponsor / Company Profile')}
               </h3>
 
               {/* Logo upload block */}
               <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-500 block uppercase tracking-wide">Logo Thương Hiệu / Doanh Nghiệp *</label>
+                <label className="text-[11px] font-bold text-slate-500 block uppercase tracking-wide">
+                  {L.t('Logo Thương Hiệu / Doanh Nghiệp *', 'Brand / Company Logo *')}
+                </label>
                 <div 
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
@@ -377,65 +381,79 @@ export default function PublicSponsorRegister({ onNavigate }: PublicSponsorRegis
                       <div className="w-12 h-12 bg-white border border-slate-200 rounded-full flex items-center justify-center mx-auto shadow-sm text-slate-400">
                         <Upload className="w-5 h-5" />
                       </div>
-                      <p className="text-xs font-medium text-slate-600">Kéo thả logo doanh nghiệp vào đây hoặc</p>
+                      <p className="text-xs font-medium text-slate-600">
+                        {L.t('Kéo thả logo doanh nghiệp vào đây hoặc', 'Drag and drop your logo here or')}
+                      </p>
                       <label className="inline-block px-3 py-1.5 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 text-[10.5px] font-bold text-slate-700 cursor-pointer transition-all">
-                        Duyệt tìm tệp ảnh
+                        {L.t('Duyệt tìm tệp ảnh', 'Browse image file')}
                         <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
                       </label>
-                      <p className="text-[9.5px] text-slate-400">Khuyên dùng logo định dạng PNG nền trong suốt (Transparent), độ phân giải cao</p>
+                      <p className="text-[9.5px] text-slate-400">
+                        {L.t('Khuyên dùng logo định dạng PNG nền trong suốt (Transparent), độ phân giải cao', 'High-res transparent background PNG logo is highly recommended')}
+                      </p>
                     </div>
                   )}
                   {isLogoUploading && (
-                    <div className="text-[10px] text-slate-400 mt-2 font-mono">Đang tải và xử lý...</div>
+                    <div className="text-[10px] text-slate-400 mt-2 font-mono">
+                      {L.t('Đang tải và xử lý...', 'Uploading & processing...')}
+                    </div>
                   )}
                 </div>
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-slate-500 block mb-1">Tên Thương hiệu / Doanh nghiệp đăng ký *</label>
+                <label className="text-[11px] font-bold text-slate-500 block mb-1">
+                  {L.t('Tên Thương hiệu / Doanh nghiệp đăng ký *', 'Brand / Registered Company Name *')}
+                </label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="ví dụ: Công ty Cổ phần Boston Pharma Việt Nam"
+                  placeholder={L.p('ví dụ: Công ty Cổ phần Boston Pharma Việt Nam', 'e.g. Boston Pharma Joint Stock Company')}
                   className="w-full px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-teal-500"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[11px] font-bold text-slate-500 block mb-1">Họ & Tên Đại diện liên hệ *</label>
+                  <label className="text-[11px] font-bold text-slate-500 block mb-1">
+                    {L.t('Họ & Tên Đại diện liên hệ *', 'Contact Person Name *')}
+                  </label>
                   <input
                     type="text"
                     required
                     value={contactPerson}
                     onChange={(e) => setContactPerson(e.target.value)}
-                    placeholder="ví dụ: Bác sĩ, Trưởng đại diện Nguyễn Minh Thư"
+                    placeholder={L.p('ví dụ: Nguyễn Minh Thư', 'e.g. Ms. Jane Smith')}
                     className="w-full px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-slate-500 block mb-1">Số điện thoại liên hệ *</label>
+                  <label className="text-[11px] font-bold text-slate-500 block mb-1">
+                    {L.t('Số điện thoại liên hệ *', 'Contact Phone Number *')}
+                  </label>
                   <input
                     type="tel"
                     required
                     value={contactPhone}
                     onChange={(e) => setContactPhone(e.target.value)}
-                    placeholder="ví dụ: 0977889900"
+                    placeholder={L.p('ví dụ: 0977889900', 'e.g. 0977889900')}
                     className="w-full px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold font-mono text-slate-900 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-slate-500 block mb-1">Email nhận thư báo ký kết & tài liệu *</label>
+                <label className="text-[11px] font-bold text-slate-500 block mb-1">
+                  {L.t('Email nhận thư báo ký kết & tài liệu *', 'Email for Contracts & Documents *')}
+                </label>
                 <input
                   type="email"
                   required
                   value={contactEmail}
                   onChange={(e) => setContactEmail(e.target.value)}
-                  placeholder="ví dụ: minhthu.nguyen@bostonpharma.com"
+                  placeholder={L.p('ví dụ: minhthu.nguyen@bostonpharma.com', 'e.g. jane.smith@bostonpharma.com')}
                   className="w-full px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none"
                 />
               </div>
@@ -444,8 +462,8 @@ export default function PublicSponsorRegister({ onNavigate }: PublicSponsorRegis
                 <RichTextEditor
                   value={notes}
                   onChange={setNotes}
-                  label="Ghi chú hoặc yêu cầu đặc biệt của Doanh nghiệp"
-                  placeholder="Yêu cầu sơ đồ gian hàng, mong muốn ghép chung, thời hạn ký hợp hợp hạch toán..."
+                  label={L.t('Ghi chú hoặc yêu cầu đặc biệt của Doanh nghiệp', 'Company requests or special notes') as string}
+                  placeholder={L.p('Yêu cầu sơ đồ gian hàng, mong muốn ghép chung, thời hạn ký hợp hợp hạch toán...', 'Booth layout requirements, co-branding request, accounting deadlines...')}
                   id="sponsor-notes"
                 />
               </div>
@@ -457,14 +475,14 @@ export default function PublicSponsorRegister({ onNavigate }: PublicSponsorRegis
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
                 <span className="w-1.5 h-3.5 bg-teal-600 rounded"></span>
-                2. Lựa Chọn Phân Khúc Đồng Hành
+                {L.section('tierSelect', '2. Lựa Chọn Phân Khúc Đồng Hành', '2. Sponsorship Package Selection')}
               </h3>
 
               <div className="col-span-1 space-y-2.5">
                 {SPONSOR_TIERS.map((t) => (
                   <label 
                     key={t.id}
-                    className={`p-3.5 border rounded-2xl flex items-start gap-3 cursor-pointer hover:bg-slate-50 transition-all select-none relative ${
+                    className={`p-3.5 border rounded-2xl flex items-start gap-3 cursor-pointer hover:bg-slate-55 transition-all select-none relative ${
                       tier === t.id ? 'border-indigo-600 bg-indigo-50/30' : 'border-slate-200 bg-white'
                     }`}
                   >
@@ -476,7 +494,9 @@ export default function PublicSponsorRegister({ onNavigate }: PublicSponsorRegis
                       className="mt-1 text-indigo-600 focus:ring-indigo-55"
                     />
                     <div className="space-y-0.5">
-                      <p className="font-extrabold text-slate-900 text-[12.5px]">{t.name}</p>
+                      <p className="font-extrabold text-slate-900 text-[12.5px]">
+                        {L.t(t.name, t.id === 'platinum' ? 'Platinum Partner' : t.id === 'gold' ? 'Gold Partner' : t.id === 'silver' ? 'Silver Partner' : t.id === 'bronze' ? 'Bronze Partner' : 'Co-Sponsor')}
+                      </p>
                       <p className="text-xs font-black font-mono text-indigo-700">{(t.fee).toLocaleString()}đ</p>
                     </div>
                     {tier === t.id && (
@@ -490,13 +510,17 @@ export default function PublicSponsorRegister({ onNavigate }: PublicSponsorRegis
 
               {/* Dynamic Benefits Checklist Panel */}
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-150 space-y-2">
-                <span className="text-[10px] font-bold text-slate-450 uppercase tracking-widest font-mono block">DỰ KIẾN QUYỀN LỢI ĐỒNG HÀNH CHÍNH</span>
-                <p className="text-[9.5px] text-slate-400 leading-tight">Quyền lợi chuẩn theo quy định bảo trợ. Doanh nghiệp có thể điều chỉnh hoặc ghi chú thêm ở mục bên dưới:</p>
+                <span className="text-[10px] font-bold text-slate-450 uppercase tracking-widest font-mono block">
+                  {L.t('DỰ KIẾN QUYỀN LỢI ĐỒNG HÀNH CHÍNH', 'PROSPECTIVE KEY SPONSOR BENEFITS')}
+                </span>
+                <p className="text-[9.5px] text-slate-400 leading-tight">
+                  {L.t('Quyền lợi chuẩn theo quy định bảo trợ. Doanh nghiệp có thể điều chỉnh hoặc ghi chú thêm ở mục bên dưới:', 'Standard package benefits. You may modify or add notes in the editor below:')}
+                </p>
                 
                 <textarea
                   value={customBenefitsText}
                   onChange={(e) => setCustomBenefitsText(e.target.value)}
-                  placeholder="Danh sách quyền lợi chính thức được phân cách bằng dòng..."
+                  placeholder={L.p('Danh sách quyền lợi chính thức được phân cách bằng dòng...', 'List of official benefits separated by lines...')}
                   className="w-full p-3 border border-slate-200 rounded-xl text-[11px] font-medium text-slate-700 bg-white focus:outline-none focus:border-indigo-500 tracking-tight"
                   rows={6}
                 />
@@ -515,7 +539,7 @@ export default function PublicSponsorRegister({ onNavigate }: PublicSponsorRegis
               disabled={isSubmitting}
               className="w-full py-4 text-sm font-extrabold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 rounded-2xl cursor-pointer transition-all shadow-lg hover:shadow-teal-600/20 uppercase tracking-wider border-none text-center"
             >
-              {isSubmitting ? 'Đang gửi hồ sơ tài trợ...' : 'Gửi Đăng Ký Tài Trợ & Nhận Hợp Đồng'}
+              {isSubmitting ? L.t('Đang gửi hồ sơ tài trợ...', 'Submitting sponsorship request...') : L.t('Gửi Đăng Ký Tài Trợ & Nhận Hợp Đồng', 'Submit Sponsorship & Request Contract')}
             </button>
           </div>
         </div>

@@ -9,6 +9,7 @@ import { store } from '../dataStore';
 import { sendRealtimeNotification } from '../lib/realtime';
 import { SpeakerRegistration } from '../types';
 import RichTextEditor from '../components/RichTextEditor';
+import { useFormLabel } from '../hooks/useFormLabel';
 
 interface PublicSpeakerRegisterProps {
   onNavigate: (view: string) => void;
@@ -17,6 +18,7 @@ interface PublicSpeakerRegisterProps {
 export default function PublicSpeakerRegister({ onNavigate }: PublicSpeakerRegisterProps) {
   const businessConfig = store.getBusinessConfig();
   const formCfg = businessConfig.speakerFormConfig;
+  const L = useFormLabel(formCfg);
   // Form State
   const [title, setTitle] = useState('PGS.TS.');
   const [fullName, setFullName] = useState('');
@@ -254,7 +256,7 @@ export default function PublicSpeakerRegister({ onNavigate }: PublicSpeakerRegis
             <div className="space-y-4">
               <h3 className="font-bold text-slate-900 border-b border-slate-100 pb-2 text-sm uppercase text-teal-800 flex items-center gap-1.5">
                 <BookOpen className="w-4 h-4" />
-                1. Thông Tin Báo Cáo Viên
+                {L.section('speakerInfo', '1. Thông Tin Báo Cáo Viên', '1. Speaker Information')}
               </h3>
 
               {/* Speaker Avatar selector */}
@@ -263,7 +265,9 @@ export default function PublicSpeakerRegister({ onNavigate }: PublicSpeakerRegis
                   {avatarImage ? (
                     <img src={avatarImage} className="w-full h-full object-cover" alt="Speaker Avatar" />
                   ) : (
-                    <span className="text-slate-400 text-[10px] font-bold text-center p-1 leading-none select-none">Chưa có ảnh</span>
+                    <span className="text-slate-400 text-[10px] font-bold text-center p-1 leading-none select-none">
+                      {L.t('Chưa có ảnh', 'No Photo')}
+                    </span>
                   )}
                   {isAvatarUploading && (
                     <div className="absolute inset-0 bg-slate-900/50 flex items-center justify-center text-[10px] text-white font-mono">
@@ -272,11 +276,15 @@ export default function PublicSpeakerRegister({ onNavigate }: PublicSpeakerRegis
                   )}
                 </div>
                 <div className="space-y-1 text-center sm:text-left">
-                  <span className="text-xs font-bold text-slate-850 block uppercase tracking-wide">Ảnh Chân Dung / Chân Dung Khoa Học *</span>
-                  <p className="text-[10px] text-slate-500 leading-snug">Ảnh chân dung của báo cáo viên sẽ được in trên Kỷ yếu Hội nghị, Thẻ đại biểu danh dự & Website chính thức.</p>
+                  <span className="text-xs font-bold text-slate-850 block uppercase tracking-wide">
+                    {L.t('Ảnh Chân Dung / Chân Dung Khoa Học *', 'Scientific Portrait / Avatar *')}
+                  </span>
+                  <p className="text-[10px] text-slate-500 leading-snug">
+                    {L.t('Ảnh chân dung của báo cáo viên sẽ được in trên Kỷ yếu Hội nghị, Thẻ đại biểu danh dự & Website chính thức.', 'The portrait photo of the speaker will be printed in the Conference Proceedings, Honorary Badge & Official Website.')}
+                  </p>
                   <div className="flex items-center justify-center sm:justify-start gap-2 pt-1.5">
                     <label className="px-3 py-1 bg-white hover:bg-slate-100 border border-slate-350 text-[11px] font-bold rounded-lg cursor-pointer transition-all select-none">
-                      Tải ảnh chân dung
+                      {L.t('Tải ảnh chân dung', 'Upload Portrait')}
                       <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                     </label>
                     {avatarImage && (
@@ -285,7 +293,7 @@ export default function PublicSpeakerRegister({ onNavigate }: PublicSpeakerRegis
                         onClick={() => setAvatarImage(null)}
                         className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 text-[11px] font-semibold rounded-lg border-none cursor-pointer"
                       >
-                        Xóa ảnh
+                        {L.t('Xóa ảnh', 'Remove Photo')}
                       </button>
                     )}
                   </div>
@@ -294,7 +302,9 @@ export default function PublicSpeakerRegister({ onNavigate }: PublicSpeakerRegis
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Học hàm / Học vị *</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    {L.t('Học hàm / Học vị *', 'Academic Title *')}
+                  </label>
                   <select
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
@@ -307,19 +317,21 @@ export default function PublicSpeakerRegister({ onNavigate }: PublicSpeakerRegis
                     <option value="BSCKII.">BSCKII. (Bác sĩ Chuyên khoa II)</option>
                     <option value="BSCKI.">BSCKI. (Bác sĩ Chuyên khoa I)</option>
                     <option value="BS.">BS. (Bác sĩ chuyên khoa)</option>
-                    <option value="Professor">Professor (Quốc tế)</option>
-                    <option value="Dr.">Dr. (Quốc tế)</option>
+                    <option value="Professor">Professor (International)</option>
+                    <option value="Dr.">Dr. (International)</option>
                   </select>
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Họ và Tên *</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    {L.t('Họ và Tên *', 'Full Name *')}
+                  </label>
                   <input
                     type="text"
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="ví dụ: PGS.TS. Trần Quốc Bảo"
+                    placeholder={L.p('ví dụ: PGS.TS. Trần Quốc Bảo', 'e.g. Prof. John Smith')}
                     className="w-full px-4 py-2 bg-slate-55 border border-slate-200 rounded-xl text-sm focus:border-teal-500 focus:outline-none placeholder-slate-400"
                   />
                 </div>
@@ -327,25 +339,29 @@ export default function PublicSpeakerRegister({ onNavigate }: PublicSpeakerRegis
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Đơn vị công tác chính *</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    {L.t('Đơn vị công tác chính *', 'Primary Institution *')}
+                  </label>
                   <input
                     type="text"
                     required
                     value={organization}
                     onChange={(e) => setOrganization(e.target.value)}
-                    placeholder="Bệnh viện mổ chính, viện nghiên cứu hoặc Đại học"
+                    placeholder={L.p('Bệnh viện mổ chính, viện nghiên cứu hoặc Đại học', 'Hospital, research institute, or university')}
                     className="w-full px-4 py-2 bg-slate-55 border border-slate-200 rounded-xl text-sm focus:border-teal-500 focus:outline-none placeholder-slate-400"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Khoa / Phòng ban / Bộ môn *</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    {L.t('Khoa / Phòng ban / Bộ môn *', 'Department / Specialty *')}
+                  </label>
                   <input
                     type="text"
                     required
                     value={department}
                     onChange={(e) => setDepartment(e.target.value)}
-                    placeholder="ví dụ: Chuyên bộ môn Chấn thương chỉnh hình"
+                    placeholder={L.p('ví dụ: Chuyên bộ môn Chấn thương chỉnh hình', 'e.g., Plastic Surgery Department')}
                     className="w-full px-4 py-2 bg-slate-55 border border-slate-200 rounded-xl text-sm focus:border-teal-500 focus:outline-none placeholder-slate-400"
                   />
                 </div>
@@ -353,25 +369,29 @@ export default function PublicSpeakerRegister({ onNavigate }: PublicSpeakerRegis
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Số điện thoại *</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    {L.t('Số điện thoại *', 'Phone Number *')}
+                  </label>
                   <input
                     type="tel"
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="ví dụ: 0912123567"
+                    placeholder={L.p('ví dụ: 0912123567', 'e.g. 0912123567')}
                     className="w-full px-4 py-2 bg-slate-55 border border-slate-200 rounded-xl text-sm focus:border-teal-500 focus:outline-none placeholder-slate-400"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Email liên hệ trao đổi học thuật *</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    {L.t('Email liên hệ trao đổi học thuật *', 'Academic Contact Email *')}
+                  </label>
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="ví dụ: bao.tq@hospital.vn"
+                    placeholder={L.p('ví dụ: bao.tq@hospital.vn', 'e.g. j.smith@hospital.com')}
                     className="w-full px-4 py-2 bg-slate-55 border border-slate-200 rounded-xl text-sm focus:border-teal-500 focus:outline-none placeholder-slate-400"
                   />
                 </div>
@@ -381,8 +401,8 @@ export default function PublicSpeakerRegister({ onNavigate }: PublicSpeakerRegis
                 <RichTextEditor
                   value={bio}
                   onChange={setBio}
-                  label="Tiểu sử khoa học tóm tắt (Bio) - Khoảng 100 từ"
-                  placeholder="Giới thiệu học hàm học vị, số năm chuyên khoa, các chức vụ danh dự hoặc công trình đại diện..."
+                  label={L.t('Tiểu sử khoa học tóm tắt (Bio) - Khoảng 100 từ', 'Short Scientific Bio - Around 100 words') as string}
+                  placeholder={L.p('Giới thiệu học hàm học vị, số năm chuyên khoa, các chức vụ danh dự hoặc công trình đại diện...', 'Brief intro, academic title, years of experience, honorary positions, or publication highlights...')}
                   id="speaker-bio"
                 />
               </div>
@@ -392,24 +412,28 @@ export default function PublicSpeakerRegister({ onNavigate }: PublicSpeakerRegis
             <div className="space-y-4 pt-4 border-t border-slate-100">
               <h3 className="font-bold text-slate-900 border-b border-slate-100 pb-2 text-sm uppercase text-teal-800 flex items-center gap-1.5">
                 <FileText className="w-4 h-4" />
-                2. Nội Dung Đề Tài Đăng Ký Đệ Trình
+                {L.section('abstractInfo', '2. Nội Dung Đề Tài Đăng Ký Đệ Trình', '2. Abstract & Presentation Details')}
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Tên đề tài bài báo cáo khoa học *</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    {L.t('Tên đề tài bài báo cáo khoa học *', 'Presentation Title *')}
+                  </label>
                   <input
                     type="text"
                     required
                     value={presentationTitle}
                     onChange={(e) => setPresentationTitle(e.target.value)}
-                    placeholder="In thường hoặc in nổi bật đề tài"
+                    placeholder={L.p('In thường hoặc in nổi bật đề tài', 'Title of presentation / scientific paper')}
                     className="w-full px-4 py-2 bg-slate-55 border border-slate-200 rounded-xl text-sm focus:border-teal-500 focus:outline-none placeholder-slate-400 font-semibold"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Chuyên mục / Chuyên khoa chính *</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    {L.t('Chuyên mục / Chuyên khoa chính *', 'Scientific Category / Track *')}
+                  </label>
                   <select
                     value={presentationTrack}
                     onChange={(e) => setPresentationTrack(e.target.value)}
@@ -428,8 +452,8 @@ export default function PublicSpeakerRegister({ onNavigate }: PublicSpeakerRegis
                 <RichTextEditor
                   value={abstractText}
                   onChange={setAbstractText}
-                  label="Tóm tắt nội dung báo cáo (Abstract) - Giới hạn 500 từ *"
-                  placeholder="Cấu trúc bắt buộc chuẩn Y học: Đặt vấn đề, Đối tượng - Phương pháp nghiên cứu, Kết quả, Kết luận thảo luận..."
+                  label={L.t('Tóm tắt nội dung báo cáo (Abstract) - Giới hạn 500 từ *', 'Abstract text - Limit 500 words *') as string}
+                  placeholder={L.p('Cấu trúc bắt buộc chuẩn Y học: Đặt vấn đề, Đối tượng - Phương pháp nghiên cứu, Kết quả, Kết luận thảo luận...', 'Standard medical structure: Objective, Materials & Methods, Results, Conclusion & Discussion...')}
                   id="speaker-abstract"
                 />
               </div>
@@ -437,14 +461,18 @@ export default function PublicSpeakerRegister({ onNavigate }: PublicSpeakerRegis
               {/* Upload element */}
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <span className="text-xs font-bold text-slate-800 block">Tải lên slide nháp / đề cương / tóm tắt đầy đủ</span>
-                  <p className="text-[10px] text-slate-500">Chấp nhận định dạng .pdf, .docx, .ppt, .pptx tối đa 15MB. Bản này dùng để hội đồng đọc bình duyệt chuyên sâu.</p>
+                  <span className="text-xs font-bold text-slate-800 block">
+                    {L.t('Tải lên slide nháp / đề cương / tóm tắt đầy đủ', 'Upload draft slides / outline / full abstract')}
+                  </span>
+                  <p className="text-[10px] text-slate-500">
+                    {L.t('Chấp nhận định dạng .pdf, .docx, .ppt, .pptx tối đa 15MB. Bản này dùng để hội đồng đọc bình duyệt chuyên sâu.', 'Accepts .pdf, .docx, .ppt, .pptx formats, max 15MB. This file will be reviewed by the academic committee.')}
+                  </p>
                 </div>
 
                 <div className="flex items-center gap-3">
                   <label className="px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 cursor-pointer text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-sm">
                     <Upload className="w-4 h-4 text-slate-400" />
-                    Bấm để tải tệp
+                    {L.t('Bấm để tải tệp', 'Click to upload')}
                     <input
                       type="file"
                       accept=".pdf,.docx,.ppt,.pptx"
@@ -470,9 +498,11 @@ export default function PublicSpeakerRegister({ onNavigate }: PublicSpeakerRegis
                 <label htmlFor="calendarSync" className="cursor-pointer text-xs select-none">
                   <span className="font-bold text-slate-900 block flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5 text-teal-600" />
-                    Tự động đồng bộ Lịch trình (Calendar Sync)
+                    {L.t('Tự động đồng bộ Lịch trình (Calendar Sync)', 'Automated Calendar Sync')}
                   </span>
-                  <span className="text-slate-500">Nếu đề tài được phê duyệt, hệ thống sẽ tự động đồng bộ thời gian báo cáo chính thức vào Google Calendar của bác sĩ qua file đệ trình .ics đính kèm.</span>
+                  <span className="text-slate-500">
+                    {L.t('Nếu đề tài được phê duyệt, hệ thống sẽ tự động đồng bộ thời gian báo cáo chính thức vào Google Calendar của bác sĩ qua file đệ trình .ics đính kèm.', 'If the presentation is approved, the system will automatically sync the schedule into your Google Calendar via an attached .ics file.')}
+                  </span>
                 </label>
               </div>
             </div>
@@ -484,7 +514,7 @@ export default function PublicSpeakerRegister({ onNavigate }: PublicSpeakerRegis
                 disabled={isSubmitting}
                 className="w-full py-4.5 rounded-2xl bg-indigo-700 hover:bg-indigo-850 disabled:opacity-50 text-white font-bold text-sm tracking-widest transition-all shadow-lg shadow-indigo-700/10 uppercase cursor-pointer"
               >
-                {isSubmitting ? 'Đang gửi hồ sơ báo cáo...' : 'Gửi Hồ Sơ & Đăng Báo Cáo Khoa Học'}
+                {isSubmitting ? L.t('Đang gửi hồ sơ báo cáo...', 'Submitting presentation details...') : L.t('Gửi Hồ Sơ & Đăng Báo Cáo Khoa Học', 'Submit Presentation & Scientific Abstract')}
               </button>
             </div>
           </form>

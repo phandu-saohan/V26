@@ -216,6 +216,12 @@ export interface SentNotificationLog {
   response?: any;
 }
 
+/** Label song ngữ cho một mục */
+export interface BilingualLabel {
+  vi: string;
+  en: string;
+}
+
 /** Cấu hình từng trang form public (delegate, speaker, sponsor) */
 export interface PublicFormConfig {
   /** Bật/tắt form này — khi false hiển thị thông báo đóng */
@@ -238,6 +244,10 @@ export interface PublicFormConfig {
   footerNote?: string;
   /** Giới hạn đăng ký riêng cho form này (0 = không giới hạn) */
   maxEntries?: number;
+  /** Chế độ song ngữ: 'vi' = chỉ tiếng Việt, 'en' = chỉ tiếng Anh, 'both' = song ngữ VI/EN */
+  language?: 'vi' | 'en' | 'both';
+  /** Tên các section tùy chỉnh — key: section id, value: label song ngữ */
+  sectionLabels?: Record<string, BilingualLabel>;
 }
 
 export interface BusinessConfig {

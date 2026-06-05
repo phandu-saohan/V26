@@ -91,6 +91,7 @@ const DEFAULT_BUSINESS_CONFIG: BusinessConfig = {
   pwaBackgroundColor: "#0f172a",
   delegateFormConfig: {
     isOpen: true,
+    language: 'both',
     formTitle: "ĐĂNG KÝ ĐẠI BIỂU THAM DỰ HỘI NGHỊ THƯỜNG NIÊN VSAPS 2026",
     formDescription: "Cổng đăng ký điện tử dành cho đại biểu, bác sĩ thẩm mỹ trong nước & quốc tế. Điền chính xác thông tin để phát hành CME và thẻ đại biểu QR tự động.",
     organizerLabel: "HỘI PHẪU THUẬT TẠO HÌNH THẨM MỸ VIỆT NAM (VSAPS)",
@@ -99,9 +100,16 @@ const DEFAULT_BUSINESS_CONFIG: BusinessConfig = {
     closedMessage: "Cổng đăng ký đại biểu hiện đã đóng. Vui lòng liên hệ Ban tổ chức để biết thêm thông tin.",
     footerNote: "",
     maxEntries: 0,
+    sectionLabels: {
+      personalInfo:  { vi: "THÔNG TIN ĐẠI BIỂU ĐĂNG KÝ",      en: "DELEGATE PERSONAL INFORMATION" },
+      scheduleAddOns:{ vi: "THỜI ĐIỂM & DỊCH VỤ PHỤ TRỢ TỰ CHỌN", en: "SCHEDULE & OPTIONAL ADD-ON SERVICES" },
+      package:       { vi: "CHỌN GÓI ĐĂNG KÝ HỘI NGHỊ",         en: "CONFERENCE REGISTRATION PACKAGE" },
+      payment:       { vi: "THÔNG TIN THANH TOÁN CHUYỂN KHOẢN",  en: "BANK TRANSFER PAYMENT DETAILS" },
+    },
   },
   speakerFormConfig: {
     isOpen: true,
+    language: 'both',
     formTitle: "ĐĂNG KÝ NỘP BÀI BÁO CÁO KHOA HỌC VSAPS 2026",
     formDescription: "Cổng nộp báo cáo khoa học dành cho báo cáo viên, chuyên gia trong và ngoài nước. Vui lòng đính kèm file tóm tắt abstract.",
     organizerLabel: "HỘI PHẪU THUẬT TẠO HÌNH THẨM MỸ VIỆT NAM (VSAPS)",
@@ -110,9 +118,14 @@ const DEFAULT_BUSINESS_CONFIG: BusinessConfig = {
     closedMessage: "Cổng nộp bài báo cáo hiện đã đóng. Vui lòng liên hệ Ban thư ký khoa học.",
     footerNote: "",
     maxEntries: 0,
+    sectionLabels: {
+      speakerInfo:   { vi: "THÔNG TIN BÁO CÁO VIÊN",            en: "SPEAKER INFORMATION" },
+      abstractInfo:  { vi: "NỘI DUNG ĐỀ TÀI ĐĂNG KÝ ĐỀ TRÌNH", en: "ABSTRACT & PRESENTATION DETAILS" },
+    },
   },
   sponsorFormConfig: {
     isOpen: true,
+    language: 'both',
     formTitle: "ĐĂNG KÝ NHÀ TÀI TRỢ & ĐỐI TÁC VSAPS 2026",
     formDescription: "Đăng ký hợp tác tài trợ chính thức cho Hội nghị Khoa học Thẩm mỹ thường niên VSAPS 2026. Ban tổ chức sẽ liên hệ xác nhận trong 24h.",
     organizerLabel: "HỘI PHẪU THUẬT TẠO HÌNH THẨM MỸ VIỆT NAM (VSAPS)",
@@ -121,6 +134,10 @@ const DEFAULT_BUSINESS_CONFIG: BusinessConfig = {
     closedMessage: "Cổng đăng ký tài trợ hiện đã đóng. Vui lòng liên hệ Ban tổ chức.",
     footerNote: "",
     maxEntries: 0,
+    sectionLabels: {
+      sponsorProfile: { vi: "THÔNG TIN DOANH NGHIỆP TÀI TRỢ",  en: "SPONSOR / COMPANY PROFILE" },
+      tierSelect:     { vi: "CHỌN GÓI TÀI TRỢ",                 en: "SPONSORSHIP PACKAGE SELECTION" },
+    },
   },
 };
 

@@ -2645,6 +2645,106 @@ export default function SettingsPanel({ role }: SettingsPanelProps) {
                         className="w-40 px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500 outline-none font-bold text-slate-800"
                       />
                     </div>
+
+                    {/* Language configuration */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-black text-slate-600 block">Chế độ ngôn ngữ hiển thị form</label>
+                      <select
+                        value={(cfg as any).language || 'both'}
+                        onChange={(e) => setFormCfg({ language: e.target.value as any })}
+                        className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500 outline-none font-bold text-slate-800"
+                      >
+                        <option value="vi">Chỉ Tiếng Việt (Vietnamese Only)</option>
+                        <option value="en">Chỉ Tiếng Anh (English Only)</option>
+                        <option value="both">Song ngữ Việt - Anh (Bilingual VI/EN)</option>
+                      </select>
+                    </div>
+
+                    {/* Section Labels configuration */}
+                    <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                      <span className="text-[11px] font-black text-slate-800 block uppercase tracking-wide">
+                        ✍️ Tùy Chỉnh Tên Các Section (Tiêu Đề Phân Đoạn)
+                      </span>
+                      <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">
+                        Chỉnh sửa tiêu đề hiển thị cho từng phần trong form công khai ở cả 2 ngôn ngữ (Việt & Anh).
+                      </p>
+
+                      <div className="space-y-4 pt-2 border-t border-slate-200">
+                        {(() => {
+                          const currentSectionLabels = (cfg as any).sectionLabels || {};
+                          
+                          // Define sections based on form type
+                          const sections: { key: string; labelVi: string; labelEn: string; placeholderVi: string; placeholderEn: string }[] = [];
+                          if (formActiveSection === 'delegate') {
+                            sections.push(
+                              { key: 'personalInfo', labelVi: 'Phần 1: Thông tin đại biểu', labelEn: 'Section 1: Delegate Info', placeholderVi: 'THÔNG TIN ĐẠI BIỂU ĐĂNG KÝ', placeholderEn: 'DELEGATE PERSONAL INFORMATION' },
+                              { key: 'scheduleAddOns', labelVi: 'Phần 2: Thời điểm & Dịch vụ', labelEn: 'Section 2: Schedule & Services', placeholderVi: 'THỜI ĐIỂM & DỊCH VỤ PHỤ TRỢ TỰ CHỌN', placeholderEn: 'SCHEDULE & OPTIONAL ADD-ON SERVICES' },
+                              { key: 'package', labelVi: 'Phần 3: Chọn gói đăng ký', labelEn: 'Section 3: Package Select', placeholderVi: 'CHỌN GÓI ĐĂNG KÝ HỘI NGHỊ', placeholderEn: 'CONFERENCE REGISTRATION PACKAGE' },
+                              { key: 'payment', labelVi: 'Phần 4: Thanh toán chuyển khoản', labelEn: 'Section 4: Payment Details', placeholderVi: 'THÔNG TIN THANH TOÁN CHUYỂN KHOẢN', placeholderEn: 'BANK TRANSFER PAYMENT DETAILS' }
+                            );
+                          } else if (formActiveSection === 'speaker') {
+                            sections.push(
+                              { key: 'speakerInfo', labelVi: 'Phần 1: Thông tin báo cáo viên', labelEn: 'Section 1: Speaker Info', placeholderVi: 'THÔNG TIN BÁO CÁO VIÊN', placeholderEn: 'SPEAKER INFORMATION' },
+                              { key: 'abstractInfo', labelVi: 'Phần 2: Nội dung đề tài', labelEn: 'Section 2: Abstract Details', placeholderVi: 'NỘI DUNG ĐỀ TÀI ĐĂNG KÝ ĐỀ TRÌNH', placeholderEn: 'ABSTRACT & PRESENTATION DETAILS' }
+                            );
+                          } else if (formActiveSection === 'sponsor') {
+                            sections.push(
+                              { key: 'sponsorProfile', labelVi: 'Phần 1: Thông tin doanh nghiệp', labelEn: 'Section 1: Company Profile', placeholderVi: 'THÔNG TIN DOANH NGHIỆP TÀI TRỢ', placeholderEn: 'SPONSOR / COMPANY PROFILE' },
+                              { key: 'tierSelect', labelVi: 'Phần 2: Gói tài trợ', labelEn: 'Section 2: Sponsorship Package', placeholderVi: 'CHỌN GÓI TÀI TRỢ', placeholderEn: 'SPONSORSHIP PACKAGE SELECTION' }
+                            );
+                          }
+
+                          return sections.map((sec) => {
+                            const valVi = currentSectionLabels[sec.key]?.vi || '';
+                            const valEn = currentSectionLabels[sec.key]?.en || '';
+
+                            return (
+                              <div key={sec.key} className="space-y-2 pb-2 border-b border-slate-200 last:border-0 last:pb-0">
+                                <span className="text-[10px] font-extrabold text-violet-750 block uppercase font-mono">
+                                  {sec.labelVi} / {sec.labelEn}
+                                </span>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="space-y-1">
+                                    <span className="text-[9.5px] text-slate-450 font-bold block">Tên Tiếng Việt</span>
+                                    <input
+                                      type="text"
+                                      value={valVi}
+                                      placeholder={sec.placeholderVi}
+                                      onChange={(e) => {
+                                        const newLabels = { ...currentSectionLabels };
+                                        newLabels[sec.key] = {
+                                          vi: e.target.value,
+                                          en: newLabels[sec.key]?.en || sec.placeholderEn
+                                        };
+                                        setFormCfg({ sectionLabels: newLabels });
+                                      }}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800"
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <span className="text-[9.5px] text-slate-450 font-bold block">Tên Tiếng Anh</span>
+                                    <input
+                                      type="text"
+                                      value={valEn}
+                                      placeholder={sec.placeholderEn}
+                                      onChange={(e) => {
+                                        const newLabels = { ...currentSectionLabels };
+                                        newLabels[sec.key] = {
+                                          vi: newLabels[sec.key]?.vi || sec.placeholderVi,
+                                          en: e.target.value
+                                        };
+                                        setFormCfg({ sectionLabels: newLabels });
+                                      }}
+                                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="pt-2 flex gap-3">
